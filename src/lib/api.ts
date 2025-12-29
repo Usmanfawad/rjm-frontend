@@ -13,7 +13,7 @@ import type {
   PersonaGenerationListResponse,
 } from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://rjm-backend.onrender.com';
 
 class ApiClient {
   private baseUrl: string;
