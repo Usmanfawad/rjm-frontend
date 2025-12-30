@@ -145,3 +145,39 @@ export interface PersonaGenerationListResponse {
   generations: PersonaGeneration[];
   total: number;
 }
+
+// Chat Session Types
+export interface ChatSession {
+  id: string;
+  title: string | null;
+  brand_name: string | null;
+  brief: string | null;
+  category: string | null;
+  current_state: string;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatSessionMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  state_before: string | null;
+  state_after: string | null;
+  created_at: string;
+}
+
+export interface ChatSessionDetail extends ChatSession {
+  messages: ChatSessionMessage[];
+}
+
+export interface ChatSessionListResponse {
+  sessions: ChatSession[];
+  total: number;
+}
+
+export interface ChatSessionDeleteResponse {
+  deleted: boolean;
+  session_id: string;
+}

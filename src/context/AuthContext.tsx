@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { User, LoginRequest, RegisterRequest } from '@/types/api';
 
@@ -19,6 +20,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  // Handle unauthorized (401) responses - redirect to login
+  const handleUnauthorized = useCallback(() => {
+    setUser(null);
+    router.push('/login');
+  }, [router]);
+
+  // Set up the unauthorized callback when component mounts
+  useEffect(() => {
+    api.setOnUnauthorized(handleUnauthorized);
+  }, [handleUnauthorized]);
 
   const refreshUser = useCallback(async () => {
     const token = api.getToken();

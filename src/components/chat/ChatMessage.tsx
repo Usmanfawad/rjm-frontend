@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Bot, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -36,7 +37,21 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
             : 'bg-[var(--accent)] rounded-bl-sm'
         )}
       >
-        <p className="text-sm whitespace-pre-wrap">{content}</p>
+        {isUser ? (
+          <p className="text-sm whitespace-pre-wrap">{content}</p>
+        ) : (
+          <div className="text-sm prose prose-sm dark:prose-invert max-w-none 
+            prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-2 prose-headings:text-inherit
+            prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+            prose-p:my-2 prose-p:leading-relaxed
+            prose-ul:my-2 prose-ul:pl-4 prose-li:my-0.5
+            prose-ol:my-2 prose-ol:pl-4
+            prose-strong:font-semibold prose-strong:text-inherit
+            prose-a:text-blue-500 prose-a:no-underline hover:prose-a:underline
+            [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        )}
         {timestamp && (
           <p
             className={cn(

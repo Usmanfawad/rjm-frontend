@@ -11,6 +11,9 @@ import type {
   TranscriptionResponse,
   PersonaGeneration,
   PersonaGenerationListResponse,
+  ChatSessionListResponse,
+  ChatSessionDetail,
+  ChatSessionDeleteResponse,
 } from '@/types/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://rjm-backend.onrender.com';
@@ -18,9 +21,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://rjm-backend.onr
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private onUnauthorized: (() => void) | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+  }
+
+  setOnUnauthorized(callback: () => void) {
+    this.onUnauthorized = callback;
   }
 
   setToken(token: string | null) {
@@ -40,6 +48,13 @@ class ApiClient {
       this.token = localStorage.getItem('auth_token');
     }
     return this.token;
+  }
+
+  private handleUnauthorized() {
+    this.setToken(null);
+    if (this.onUnauthorized) {
+      this.onUnauthorized();
+    }
   }
 
   private async request<T>(
@@ -63,6 +78,16 @@ class ApiClient {
         ...options,
         headers,
       });
+
+      // Handle 401 Unauthorized - token is invalid or expired
+      if (response.status === 401) {
+        this.handleUnauthorized();
+        return {
+          success: false,
+          error: 'Unauthorized',
+          detail: 'Your session has expired. Please login again.',
+        };
+      }
 
       const data = await response.json();
 
@@ -140,6 +165,27 @@ class ApiClient {
     });
   }
 
+  // Chat Session endpoints
+  async getChatSessions(): Promise<ApiResponse<ChatSessionListResponse>> {
+    return this.request<ChatSessionListResponse>('/v1/rjm/sessions');
+  }
+
+  async getChatSession(sessionId: string): Promise<ApiResponse<ChatSessionDetail>> {
+    return this.request<ChatSessionDetail>(`/v1/rjm/sessions/${sessionId}`);
+  }
+
+  async resumeChatSession(sessionId: string): Promise<ApiResponse<ChatSessionDetail>> {
+    return this.request<ChatSessionDetail>(`/v1/rjm/sessions/${sessionId}/resume`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteChatSession(sessionId: string): Promise<ApiResponse<ChatSessionDeleteResponse>> {
+    return this.request<ChatSessionDeleteResponse>(`/v1/rjm/sessions/${sessionId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Transcription endpoint
   async transcribeAudio(
     audioBlob: Blob,
@@ -186,6 +232,16 @@ class ApiClient {
         headers,
         body: formData,
       });
+
+      // Handle 401 Unauthorized - token is invalid or expired
+      if (response.status === 401) {
+        this.handleUnauthorized();
+        return {
+          success: false,
+          error: 'Unauthorized',
+          detail: 'Your session has expired. Please login again.',
+        };
+      }
 
       const data = await response.json();
 
