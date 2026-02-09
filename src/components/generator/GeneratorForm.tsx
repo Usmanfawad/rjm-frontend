@@ -2,17 +2,24 @@
 
 import { useState } from 'react';
 import { Button, Input, Textarea, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { DocumentSelector } from '@/components/documents';
+import { ErrorMessage } from '@/components/errors';
 import { api } from '@/lib/api';
 import type { GenerateProgramResponse } from '@/types/api';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface GeneratorFormProps {
   onGenerate: (result: GenerateProgramResponse) => void;
+  orgId?: string;
 }
 
-export function GeneratorForm({ onGenerate }: GeneratorFormProps) {
+export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
   const [brandName, setBrandName] = useState('');
   const [brief, setBrief] = useState('');
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [lineagesInput, setLineagesInput] = useState('');
+  const [dmasInput, setDmasInput] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,22 +28,28 @@ export function GeneratorForm({ onGenerate }: GeneratorFormProps) {
     setError('');
 
     if (!brandName.trim() || !brief.trim()) {
-      setError('Please fill in both brand name and brief');
+      setError('Please provide both brand name and brief to build your program.');
       return;
     }
 
     setIsLoading(true);
 
     try {
+      const lineages = lineagesInput.split(',').map(s => s.trim()).filter(Boolean);
+      const dmas = dmasInput.split(',').map(s => s.trim()).filter(Boolean);
+
       const response = await api.generateProgram({
         brand_name: brandName.trim(),
         brief: brief.trim(),
+        document_ids: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
+        multicultural_lineages: lineages.length > 0 ? lineages : undefined,
+        local_dmas: dmas.length > 0 ? dmas : undefined,
       });
 
       if (response.success && response.data) {
         onGenerate(response.data);
       } else {
-        setError(response.detail || response.error || 'Generation failed');
+        setError(response.error || response.detail || 'Generation failed');
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -50,7 +63,7 @@ export function GeneratorForm({ onGenerate }: GeneratorFormProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-blue-600" />
-          Generate Persona Program
+          Build Your Persona Program
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -70,23 +83,62 @@ export function GeneratorForm({ onGenerate }: GeneratorFormProps) {
             onChange={(e) => setBrief(e.target.value)}
             rows={6}
             error={!brief && error ? 'Brief is required' : undefined}
-            helperText="Be specific about your target demographics, campaign goals, and cultural contexts you want to explore."
+            helperText="Be specific about your target demographics, campaign goals, and cultural contexts for optimal results."
           />
 
+          <DocumentSelector
+            selectedIds={selectedDocumentIds}
+            onSelectionChange={setSelectedDocumentIds}
+            orgId={orgId}
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-1 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Cultural Activation Options
+          </button>
+
+          {showAdvanced && (
+            <div className="space-y-4 p-4 rounded-lg border border-[var(--border)] bg-[var(--accent)]">
+              <Input
+                label="Multicultural Lineages"
+                placeholder="e.g. African American, Hispanic, Asian American (comma-separated)"
+                value={lineagesInput}
+                onChange={(e) => setLineagesInput(e.target.value)}
+              />
+              <Input
+                label="Local DMAs"
+                placeholder="e.g. New York, Los Angeles, Chicago (comma-separated)"
+                value={dmasInput}
+                onChange={(e) => setDmasInput(e.target.value)}
+              />
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Leave blank to let MIRA automatically detect cultural signals from your brief.
+              </p>
+            </div>
+          )}
+
           {error && !(!brandName || !brief) && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <ErrorMessage
+              error={error}
+              context="GeneratorForm"
+              onDismiss={() => setError('')}
+            />
           )}
 
           <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                Building your persona program...
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate Program
+                Build Program
               </>
             )}
           </Button>

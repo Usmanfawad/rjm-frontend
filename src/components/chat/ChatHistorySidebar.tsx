@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { ChatSession } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { ConfirmationDialog } from '@/components/ui';
 import { 
   MessageSquare, 
   Plus, 
@@ -73,21 +74,25 @@ export function ChatHistorySidebar({
     }
   }, [currentSessionId]);
 
-  const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
-    e.stopPropagation();
-    
-    if (!confirm('Are you sure you want to delete this conversation?')) {
-      return;
-    }
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
-    setDeletingId(sessionId);
+  const handleDeleteClick = (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    setSessionToDelete(sessionId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) return;
+
+    setDeletingId(sessionToDelete);
     try {
-      const response = await api.deleteChatSession(sessionId);
+      const response = await api.deleteChatSession(sessionToDelete);
       if (response.success) {
-        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-        if (currentSessionId === sessionId) {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete));
+        if (currentSessionId === sessionToDelete) {
           onNewChat();
         }
+        setSessionToDelete(null);
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
@@ -199,7 +204,7 @@ export function ChatHistorySidebar({
                     </p>
                   </div>
                   <button
-                    onClick={(e) => handleDelete(e, session.id)}
+                    onClick={(e) => handleDeleteClick(e, session.id)}
                     disabled={deletingId === session.id}
                     className={cn(
                       'p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity',
@@ -219,6 +224,18 @@ export function ChatHistorySidebar({
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={!!sessionToDelete}
+        onClose={() => setSessionToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Conversation"
+        message="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

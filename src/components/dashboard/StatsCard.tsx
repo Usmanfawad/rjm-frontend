@@ -3,6 +3,7 @@
 import { Card, CardContent } from '@/components/ui';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface StatsCardProps {
   title: string;
@@ -10,6 +11,7 @@ interface StatsCardProps {
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
+  link?: string;
 }
 
 export function StatsCard({
@@ -18,6 +20,7 @@ export function StatsCard({
   change,
   changeType = 'neutral',
   icon: Icon,
+  link,
 }: StatsCardProps) {
   const changeColors = {
     positive: 'text-green-500',
@@ -25,8 +28,8 @@ export function StatsCard({
     neutral: 'text-[var(--muted-foreground)]',
   };
 
-  return (
-    <Card variant="elevated">
+  const content = (
+    <Card variant="elevated" className={link ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -43,4 +46,10 @@ export function StatsCard({
       </CardContent>
     </Card>
   );
+
+  if (link) {
+    return <Link href={link}>{content}</Link>;
+  }
+
+  return content;
 }

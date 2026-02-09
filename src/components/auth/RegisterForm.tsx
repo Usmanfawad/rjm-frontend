@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button, Input, Card, CardContent } from '@/components/ui';
-import { Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -17,6 +17,8 @@ export function RegisterForm() {
     fullName: '',
     username: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,17 +33,17 @@ export function RegisterForm() {
     setError('');
 
     if (!formData.email || !formData.password || !formData.fullName) {
-      setError('Please fill in all required fields');
+      setError('Please provide all required fields to create your account.');
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('Password must be at least 8 characters.');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
 
@@ -49,7 +51,6 @@ export function RegisterForm() {
       email: formData.email,
       password: formData.password,
       full_name: formData.fullName,
-      username: formData.username || undefined,
     });
 
     if (result.success) {
@@ -68,14 +69,14 @@ export function RegisterForm() {
             Create your account
           </h1>
           <p className="text-[var(--muted-foreground)]">
-            Start your cultural media journey today
+            Start building persona programs for your campaigns
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-500">{error}</p>
+          <div className="mb-6 p-4 rounded-lg bg-[var(--error)]/10 border border-[var(--error)]/20 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-[var(--error)] flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[var(--error)]">{error}</p>
           </div>
         )}
 
@@ -122,31 +123,55 @@ export function RegisterForm() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--muted-foreground)] pointer-events-none" />
             <Input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="Password * (min 8 characters)"
               value={formData.password}
               onChange={handleChange}
-              className="pl-10"
+              className="pl-10 pr-10"
               autoComplete="new-password"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
           </div>
 
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--muted-foreground)] pointer-events-none" />
             <Input
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               name="confirmPassword"
               placeholder="Confirm password *"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="pl-10"
+              className="pl-10 pr-10"
               autoComplete="new-password"
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
           </div>
 
           <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
-            Create account
+            {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
 

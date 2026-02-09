@@ -17,9 +17,13 @@ export function Navbar() {
   const navLinks = isAuthenticated
     ? [
         { href: '/dashboard', label: 'Dashboard' },
-        { href: '/generator', label: 'Generator' },
-        { href: '/personas', label: 'My Programs' },
+        { href: '/generator', label: 'Build Program' },
+        { href: '/personas', label: 'Program Library' },
         { href: '/chat', label: 'Chat with MIRA' },
+        { href: '/documents', label: 'Documents' },
+        { href: '/organizations', label: 'Organizations' },
+        { href: '/governance', label: 'Governance' },
+        { href: '/cultural', label: 'Cultural' },
       ]
     : [
         { href: '/', label: 'Home' },
@@ -108,7 +112,7 @@ export function Navbar() {
                           logout();
                           setIsProfileOpen(false);
                         }}
-                        className="w-full flex items-center px-4 py-2 text-sm text-red-500 hover:bg-red-500/10"
+                        className="w-full flex items-center px-4 py-2 text-sm text-[var(--error)] hover:bg-[var(--error)]/10"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
                         Sign out

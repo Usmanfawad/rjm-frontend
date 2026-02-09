@@ -8,8 +8,8 @@ const actions = [
   {
     href: '/generator',
     icon: Sparkles,
-    label: 'New Program',
-    description: 'Generate persona program',
+    label: 'Build Program',
+    description: 'Create persona program',
   },
   {
     href: '/chat',
@@ -21,7 +21,7 @@ const actions = [
     href: '/documents',
     icon: FileText,
     label: 'Documents',
-    description: 'View synced docs',
+    description: 'Manage documents',
   },
   {
     href: '/settings',

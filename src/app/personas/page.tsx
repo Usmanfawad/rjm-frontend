@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { Navbar, Footer } from '@/components/layout';
-import { Card, Button } from '@/components/ui';
+import { PageLayout, PageHeader, LoadingSpinner, EmptyState } from '@/components/layout';
+import { Card, Button, ErrorMessage } from '@/components/ui';
+import { useAuthGuard, useApiQuery } from '@/hooks';
 import { api } from '@/lib/api';
-import type { PersonaGeneration } from '@/types/api';
+import { formatDateTime } from '@/lib/format';
+import { ROUTES } from '@/constants';
 import {
-  Loader2,
   Sparkles,
   MessageSquare,
   ChevronDown,
@@ -20,129 +20,59 @@ import {
 } from 'lucide-react';
 
 export default function PersonasPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [generations, setGenerations] = useState<PersonaGeneration[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { isReady } = useAuthGuard();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  
+  const { data: generationsData, loading, error, refetch } = useApiQuery(
+    () => api.getPersonaGenerations(),
+    { enabled: isReady }
+  );
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [authLoading, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchGenerations();
-    }
-  }, [isAuthenticated]);
-
-  const fetchGenerations = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await api.getPersonaGenerations();
-      if (response.success && response.data) {
-        setGenerations(response.data.generations);
-      } else {
-        setError(response.error || 'Failed to load persona generations');
-      }
-    } catch {
-      setError('Failed to load persona generations');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const generations = generationsData?.generations || [];
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--foreground)]" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
+  if (!isReady || loading) {
+    return <LoadingSpinner fullScreen message="Loading persona programs..." />;
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--background)]">
-      <Navbar />
-      <main className="flex-1 py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Persona Programs
-              </h1>
-              <p className="text-[var(--muted-foreground)] mt-1">
-                Your generated persona programs from chat and the generator
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchGenerations}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+    <PageLayout>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageHeader
+          title="Program Library"
+          description="View and manage all your persona programs"
+          action={
+            <Button variant="outline" size="sm" onClick={refetch} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-          </div>
+          }
+        />
 
-          {/* Content */}
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-[var(--muted-foreground)] mb-4" />
-              <p className="text-[var(--muted-foreground)]">Loading your persona programs...</p>
-            </div>
-          ) : error ? (
-            <Card className="p-8 text-center">
-              <p className="text-red-500 mb-4">{error}</p>
-              <Button variant="outline" onClick={fetchGenerations}>
-                Try Again
-              </Button>
-            </Card>
-          ) : generations.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-[var(--accent)] flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-8 w-8 text-[var(--muted-foreground)]" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Persona Programs Yet</h3>
-              <p className="text-[var(--muted-foreground)] mb-6 max-w-md mx-auto">
-                Start by chatting with MIRA or using the generator to create your first persona program.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => router.push('/chat')}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Chat with MIRA
-                </Button>
-                <Button onClick={() => router.push('/generator')}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Use Generator
-                </Button>
-              </div>
-            </Card>
-          ) : (
+        {error && (
+          <ErrorMessage
+            error={error}
+            context="PersonasPage"
+            onDismiss={refetch}
+            className="mb-6"
+          />
+        )}
+
+        {generations.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No programs yet"
+            description="Build your first persona program using the generator or chat with MIRA."
+            action={{
+              label: 'Build Program',
+              onClick: () => router.push(ROUTES.GENERATOR),
+            }}
+          />
+        ) : (
             <div className="space-y-4">
               {generations.map((gen) => (
                 <Card
@@ -191,7 +121,7 @@ export default function PersonasPage() {
                         )}
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(gen.created_at)}
+                          {formatDateTime(gen.created_at)}
                         </span>
                       </div>
                     </div>
@@ -220,11 +150,9 @@ export default function PersonasPage() {
                 </Card>
               ))}
             </div>
-          )}
-        </div>
-      </main>
-      <Footer />
-    </div>
+        )}
+      </div>
+    </PageLayout>
   );
 }
 

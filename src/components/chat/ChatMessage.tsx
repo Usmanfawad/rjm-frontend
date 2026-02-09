@@ -47,7 +47,7 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
             prose-ul:my-2 prose-ul:pl-4 prose-li:my-0.5
             prose-ol:my-2 prose-ol:pl-4
             prose-strong:font-semibold prose-strong:text-inherit
-            prose-a:text-blue-500 prose-a:no-underline hover:prose-a:underline
+            prose-a:text-[var(--info)] prose-a:no-underline hover:prose-a:underline
             [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
             <ReactMarkdown>{content}</ReactMarkdown>
           </div>
