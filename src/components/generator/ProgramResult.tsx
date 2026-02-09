@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@/components/ui';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
 import type { GenerateProgramResponse } from '@/types/api';
 import {
   Key,
@@ -12,23 +14,68 @@ import {
   Copy,
   Check,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Shield,
+  MapPin,
+  Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface ProgramResultProps {
   result: GenerateProgramResponse;
 }
 
 export function ProgramResult({ result }: ProgramResultProps) {
-  const { program_json: program, program_text } = result;
+  const { program_json: program, program_text, generation_id } = result;
+  const router = useRouter();
+  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['personas']));
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(program_text);
     setCopied(true);
+    toast('Program copied to clipboard', 'success');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRegisterForGovernance = async () => {
+    if (!generation_id) {
+      toast('This program was not saved. Please sign in and build your program again.', 'warning');
+      return;
+    }
+
+    setRegistering(true);
+    try {
+      const title = `${program.header} - ${new Date().toLocaleDateString()}`;
+      const response = await api.registerObject({
+        object_type: 'persona_program',
+        reference_id: generation_id,
+        reference_table: 'persona_generations',
+        title,
+        description: `Persona program for ${program.header}`,
+      });
+
+      if (response.success && response.data) {
+        setRegistered(true);
+        toast('Program registered for governance', 'success');
+        const objId = response.data.id;
+        if (objId) {
+          setTimeout(() => {
+            router.push(`/governance/${objId}`);
+          }, 1500);
+        }
+      } else {
+        toast(response.error || 'Failed to register for governance', 'error');
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to register for governance', 'error');
+    } finally {
+      setRegistering(false);
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -46,16 +93,16 @@ export function ProgramResult({ result }: ProgramResultProps) {
   const SectionHeader = ({ id, title, icon: Icon }: { id: string; title: string; icon: React.ElementType }) => (
     <button
       onClick={() => toggleSection(id)}
-      className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="w-full flex items-center justify-between p-4 bg-[var(--accent)] rounded-lg hover:opacity-90 transition-colors"
     >
       <div className="flex items-center gap-2">
-        <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-        <span className="font-semibold text-gray-900 dark:text-white">{title}</span>
+        <Icon className="h-5 w-5 text-[var(--primary)]" />
+        <span className="font-semibold text-[var(--foreground)]">{title}</span>
       </div>
       {expandedSections.has(id) ? (
-        <ChevronUp className="h-5 w-5 text-gray-500" />
+        <ChevronUp className="h-5 w-5 text-[var(--muted-foreground)]" />
       ) : (
-        <ChevronDown className="h-5 w-5 text-gray-500" />
+        <ChevronDown className="h-5 w-5 text-[var(--muted-foreground)]" />
       )}
     </button>
   );
@@ -68,21 +115,43 @@ export function ProgramResult({ result }: ProgramResultProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-2xl">{program.header}</CardTitle>
-              <Badge variant="info" className="mt-2">{program.advertising_category}</Badge>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleCopy}>
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy All
-                </>
+              {program.advertising_category && (
+                <Badge variant="info" className="mt-2">{program.advertising_category}</Badge>
               )}
-            </Button>
+            </div>
+            <div className="flex gap-2">
+              {generation_id && !registered && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleRegisterForGovernance}
+                  disabled={registering}
+                  isLoading={registering}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Register for Governance
+                </Button>
+              )}
+              {registered && (
+                <Button variant="primary" size="sm" disabled>
+                  <Check className="h-4 w-4 mr-2" />
+                  Registered
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleCopy}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy All
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -118,21 +187,29 @@ export function ProgramResult({ result }: ProgramResultProps) {
               {program.personas.map((persona, index) => (
                 <div
                   key={index}
-                  className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                  className="p-4 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]/50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">
+                      <h4 className="font-medium text-[var(--foreground)]">
                         {persona.name}
                       </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {persona.highlight}
-                      </p>
+                      {persona.highlight && (
+                        <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                          {persona.highlight}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <Badge variant="info" className="text-xs">{persona.category}</Badge>
-                      <Badge variant="default" className="text-xs">{persona.phylum}</Badge>
-                    </div>
+                    {(persona.category || persona.phylum) && (
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        {persona.category && (
+                          <Badge variant="info" className="text-xs">{persona.category}</Badge>
+                        )}
+                        {persona.phylum && (
+                          <Badge variant="default" className="text-xs">{persona.phylum}</Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -153,14 +230,16 @@ export function ProgramResult({ result }: ProgramResultProps) {
               {program.generational_segments.map((segment, index) => (
                 <div
                   key={index}
-                  className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                  className="p-3 rounded-lg bg-[var(--accent)]"
                 >
-                  <h4 className="font-medium text-gray-900 dark:text-white">
+                  <h4 className="font-medium text-[var(--foreground)]">
                     {segment.name}
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {segment.highlight}
-                  </p>
+                  {segment.highlight && (
+                    <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                      {segment.highlight}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -171,24 +250,30 @@ export function ProgramResult({ result }: ProgramResultProps) {
       {/* Demographics */}
       <Card variant="elevated">
         <CardContent className="p-0">
-          <SectionHeader id="demos" title="Target Demographics" icon={Target} />
+          <SectionHeader id="demos" title="Demographics" icon={Target} />
           <div className={cn(
             'overflow-hidden transition-all duration-300',
             expandedSections.has('demos') ? 'max-h-96 p-4' : 'max-h-0'
           )}>
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <h4 className="font-medium text-blue-900 dark:text-blue-300 text-sm">Core</h4>
-                <p className="text-blue-700 dark:text-blue-400 mt-1">{program.demos.core}</p>
-              </div>
-              <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-                <h4 className="font-medium text-indigo-900 dark:text-indigo-300 text-sm">Secondary</h4>
-                <p className="text-indigo-700 dark:text-indigo-400 mt-1">{program.demos.secondary}</p>
-              </div>
-              <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                <h4 className="font-medium text-purple-900 dark:text-purple-300 text-sm">Broad</h4>
-                <p className="text-purple-700 dark:text-purple-400 mt-1">{program.demos.broad}</p>
-              </div>
+              {program.demos.core && (
+                <div className="p-4 rounded-lg bg-[var(--info)]/10 border border-[var(--info)]/20">
+                  <h4 className="font-medium text-[var(--info)] text-sm">Core</h4>
+                  <p className="text-[var(--foreground)] mt-1">{program.demos.core}</p>
+                </div>
+              )}
+              {program.demos.secondary && (
+                <div className="p-4 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+                  <h4 className="font-medium text-[var(--primary)] text-sm">Secondary</h4>
+                  <p className="text-[var(--foreground)] mt-1">{program.demos.secondary}</p>
+                </div>
+              )}
+              {program.demos.broad_demo && (
+                <div className="p-4 rounded-lg bg-[var(--accent)] border border-[var(--border)]">
+                  <h4 className="font-medium text-[var(--muted-foreground)] text-sm">Broad</h4>
+                  <p className="text-[var(--foreground)] mt-1">{program.demos.broad_demo}</p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -205,10 +290,10 @@ export function ProgramResult({ result }: ProgramResultProps) {
             <ul className="space-y-3">
               {program.activation_plan.map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                  <span className="w-6 h-6 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-sm font-medium flex-shrink-0">
                     {index + 1}
                   </span>
-                  <span className="text-gray-700 dark:text-gray-300">{item}</span>
+                  <span className="text-[var(--foreground)]">{item}</span>
                 </li>
               ))}
             </ul>
@@ -228,11 +313,202 @@ export function ProgramResult({ result }: ProgramResultProps) {
               <ul className="space-y-2">
                 {program.persona_insights.map((insight, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <span className="text-blue-600 dark:text-blue-400">•</span>
-                    <span className="text-gray-700 dark:text-gray-300">{insight}</span>
+                    <span className="text-[var(--primary)]">&bull;</span>
+                    <span className="text-[var(--foreground)]">{insight}</span>
                   </li>
                 ))}
               </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Category Anchors */}
+      {program.category_anchors && program.category_anchors.length > 0 && (
+        <Card variant="elevated">
+          <CardContent className="p-0">
+            <SectionHeader id="category_anchors" title="Category Anchors" icon={Target} />
+            <div className={cn(
+              'overflow-hidden transition-all duration-300',
+              expandedSections.has('category_anchors') ? 'max-h-96 p-4' : 'max-h-0'
+            )}>
+              <div className="flex flex-wrap gap-2">
+                {program.category_anchors.map((anchor, index) => (
+                  <Badge key={index} variant="info" className="px-3 py-1.5 text-sm">
+                    {anchor}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Multicultural Expressions */}
+      {program.multicultural_expressions && program.multicultural_expressions.length > 0 && (
+        <Card variant="elevated">
+          <CardContent className="p-0">
+            <SectionHeader id="multicultural" title="Multicultural Expressions" icon={Users} />
+            <div className={cn(
+              'overflow-hidden transition-all duration-300',
+              expandedSections.has('multicultural') ? 'max-h-96 p-4' : 'max-h-0'
+            )}>
+              <div className="flex flex-wrap gap-2">
+                {program.multicultural_expressions.map((expr, index) => (
+                  <Badge key={index} variant="default" className="px-3 py-1.5 text-sm">
+                    {expr}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Local Culture Segments */}
+      {program.local_culture_segments && program.local_culture_segments.length > 0 && (
+        <Card variant="elevated">
+          <CardContent className="p-0">
+            <SectionHeader id="local_culture" title="Local Culture Segments" icon={Compass} />
+            <div className={cn(
+              'overflow-hidden transition-all duration-300',
+              expandedSections.has('local_culture') ? 'max-h-96 p-4' : 'max-h-0'
+            )}>
+              <div className="flex flex-wrap gap-2">
+                {program.local_culture_segments.map((segment, index) => (
+                  <Badge key={index} variant="default" className="px-3 py-1.5 text-sm">
+                    {segment}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* M4: Local Strategy */}
+      {program.strategy_layers?.local_strategy && (
+        <Card variant="elevated">
+          <CardContent className="p-0">
+            <SectionHeader id="local_strategy" title="Local Strategy" icon={MapPin} />
+            <div className={cn(
+              'overflow-hidden transition-all duration-300',
+              expandedSections.has('local_strategy') ? 'max-h-[800px] p-4' : 'max-h-0'
+            )}>
+              <div className="space-y-4">
+                {program.strategy_layers.local_strategy.dmas && program.strategy_layers.local_strategy.dmas.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Target DMAs</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {program.strategy_layers.local_strategy.dmas.map((dma, idx) => (
+                        <Badge key={idx} variant="info" className="px-3 py-1.5 text-sm">{dma}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {program.strategy_layers.local_strategy.segments && program.strategy_layers.local_strategy.segments.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Local Culture Segments</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {program.strategy_layers.local_strategy.segments.map((segment, idx) => (
+                        <Badge key={idx} variant="default" className="px-3 py-1.5 text-sm">{segment}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {program.strategy_layers.local_strategy.insights && program.strategy_layers.local_strategy.insights.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Local Insights</h4>
+                    <ul className="space-y-2">
+                      {program.strategy_layers.local_strategy.insights.map((insight, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-[var(--primary)]">&bull;</span>
+                          <span className="text-[var(--foreground)]">{insight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {program.strategy_layers.local_strategy.recommendations && program.strategy_layers.local_strategy.recommendations.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Recommendations</h4>
+                    <ul className="space-y-2">
+                      {program.strategy_layers.local_strategy.recommendations.map((rec, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="w-6 h-6 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-sm font-medium flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className="text-[var(--foreground)]">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* M4: Multicultural Strategy */}
+      {program.strategy_layers?.multicultural_strategy && (
+        <Card variant="elevated">
+          <CardContent className="p-0">
+            <SectionHeader id="multicultural_strategy" title="Multicultural Strategy" icon={Globe} />
+            <div className={cn(
+              'overflow-hidden transition-all duration-300',
+              expandedSections.has('multicultural_strategy') ? 'max-h-[800px] p-4' : 'max-h-0'
+            )}>
+              <div className="space-y-4">
+                {program.strategy_layers.multicultural_strategy.lineages && program.strategy_layers.multicultural_strategy.lineages.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Multicultural Lineages</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {program.strategy_layers.multicultural_strategy.lineages.map((lineage, idx) => (
+                        <Badge key={idx} variant="info" className="px-3 py-1.5 text-sm">{lineage}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {program.strategy_layers.multicultural_strategy.expressions && program.strategy_layers.multicultural_strategy.expressions.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Multicultural Expressions</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {program.strategy_layers.multicultural_strategy.expressions.map((expr, idx) => (
+                        <Badge key={idx} variant="default" className="px-3 py-1.5 text-sm">{expr}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {program.strategy_layers.multicultural_strategy.insights && program.strategy_layers.multicultural_strategy.insights.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Multicultural Insights</h4>
+                    <ul className="space-y-2">
+                      {program.strategy_layers.multicultural_strategy.insights.map((insight, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-[var(--primary)]">&bull;</span>
+                          <span className="text-[var(--foreground)]">{insight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {program.strategy_layers.multicultural_strategy.recommendations && program.strategy_layers.multicultural_strategy.recommendations.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Recommendations</h4>
+                    <ul className="space-y-2">
+                      {program.strategy_layers.multicultural_strategy.recommendations.map((rec, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="w-6 h-6 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-sm font-medium flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className="text-[var(--foreground)]">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

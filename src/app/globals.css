@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Light mode (default) */
+/* Light mode (default) - Original Black & Peach Theme */
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -12,9 +12,20 @@
   --primary-foreground: #ffffff;
   --accent: #fef2f2;
   --accent-foreground: #EB6160;
+  /* Additional colors for RJM features */
+  --secondary: #EB6160;
+  --success: #38a169;
+  --warning: #d69e2e;
+  --error: #e53e3e;
+  --info: #3182ce;
+  /* Campaign Type Colors */
+  --campaign-national: #3182ce;
+  --campaign-local: #38a169;
+  --campaign-multicultural: #805ad5;
+  --campaign-local-mc: #d69e2e;
 }
 
-/* Dark mode */
+/* Dark mode - Original Black & Peach Theme */
 .dark {
   --background: #000000;
   --foreground: #ffffff;
@@ -25,9 +36,20 @@
   --primary-foreground: #ffffff;
   --accent: #1a1111;
   --accent-foreground: #EB6160;
+  /* Additional colors for RJM features */
+  --secondary: #EB6160;
+  --success: #48bb78;
+  --warning: #ecc94b;
+  --error: #fc8181;
+  --info: #4299e1;
+  /* Campaign Type Colors */
+  --campaign-national: #4299e1;
+  --campaign-local: #48bb78;
+  --campaign-multicultural: #9f7aea;
+  --campaign-local-mc: #ecc94b;
 }
 
-/* Light mode explicit class */
+/* Light mode explicit class - Original Black & Peach Theme */
 .light {
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -38,6 +60,17 @@
   --primary-foreground: #ffffff;
   --accent: #fef2f2;
   --accent-foreground: #EB6160;
+  /* Additional colors for RJM features */
+  --secondary: #EB6160;
+  --success: #38a169;
+  --warning: #d69e2e;
+  --error: #e53e3e;
+  --info: #3182ce;
+  /* Campaign Type Colors */
+  --campaign-national: #3182ce;
+  --campaign-local: #38a169;
+  --campaign-multicultural: #805ad5;
+  --campaign-local-mc: #d69e2e;
 }
 
 @theme inline {
@@ -50,6 +83,11 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
