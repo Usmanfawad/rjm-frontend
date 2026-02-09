@@ -286,7 +286,6 @@ export default function GovernanceObjectDetailPage() {
                 </CardContent>
               </Card>
             )}
-          </div>
 
             {/* Approvals */}
             {approvals.length > 0 && (
@@ -523,6 +522,7 @@ export default function GovernanceObjectDetailPage() {
           </div>
         </div>
       </div>
+      
 
       {/* State Transition Modal */}
       <Modal
