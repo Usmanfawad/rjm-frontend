@@ -19,17 +19,33 @@ export const DOCUMENT_CONFIG = {
   MAX_SIZE: API_CONFIG.MAX_FILE_SIZE,
 } as const;
 
-// Routes
+// Routes — Phase 2 lifecycle-based navigation
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+
+  // Primary navigation (5 tabs)
+  WORKSPACE: '/workspace',
+  CAMPAIGNS: '/campaigns',
+  CAMPAIGNS_NEW: '/campaigns/new',
+  CHAT: '/chat',
+  ACTIVATION: '/activation',
+  SETTINGS: '/settings',
+
+  // Settings sub-pages
+  SETTINGS_ACCOUNT: '/settings/account',
+  SETTINGS_ORGANIZATIONS: '/settings/organizations',
+  SETTINGS_ORGANIZATIONS_NEW: '/settings/organizations/new',
+  SETTINGS_DOCUMENTS: '/settings/documents',
+  SETTINGS_DOCUMENTS_SEARCH: '/settings/documents/search',
+
+  // Legacy aliases (for redirects)
   DASHBOARD: '/dashboard',
   GENERATOR: '/generator',
   PERSONAS: '/personas',
-  CHAT: '/chat',
   DOCUMENTS: '/documents',
   DOCUMENTS_SEARCH: '/documents/search',
   ORGANIZATIONS: '/organizations',
@@ -38,7 +54,6 @@ export const ROUTES = {
   GOVERNANCE_OBJECTS: '/governance/objects',
   CULTURAL: '/cultural',
   PROFILE: '/profile',
-  SETTINGS: '/settings',
 } as const;
 
 // Local Storage Keys

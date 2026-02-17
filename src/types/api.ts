@@ -280,6 +280,14 @@ export interface ProgramJSON {
     local_strategy?: LocalStrategy;
     multicultural_strategy?: MulticulturalStrategy;
   };
+  // Document context metadata (injected by backend at save time)
+  _document_context?: DocumentContextEntry[];
+}
+
+export interface DocumentContextEntry {
+  id: string;
+  title: string | null;
+  status: 'applied' | 'not_available' | 'error';
 }
 
 export interface GenerateProgramRequest {
@@ -610,6 +618,44 @@ export interface GovernanceListQuery {
   org_id?: string;
   limit?: number;
   offset?: number;
+}
+
+// ============================================
+// CAMPAIGN TYPES (Phase 2 — Lifecycle View)
+// ============================================
+
+export type CampaignLifecycleState =
+  | 'ideation'
+  | 'draft'
+  | 'review'
+  | 'finalized'
+  | 'activated'
+  | 'archived';
+
+/**
+ * Unified campaign view merging PersonaGeneration + optional GovernedObjectResponse.
+ * This is a frontend-only view model — no backend changes required.
+ */
+export interface CampaignView {
+  id: string;
+  brand_name: string;
+  brief: string;
+  program_text: string;
+  program_json?: ProgramJSON;
+  advertising_category?: string;
+  source: 'generator' | 'chat';
+  created_at: string;
+
+  // Lifecycle state (derived from governance or default to ideation)
+  lifecycle_state: CampaignLifecycleState;
+
+  // Governance fields (optional — only present if governed)
+  governance_id?: string;
+  governance_version?: number;
+  governance_title?: string;
+  approved_at?: string;
+  activated_at?: string;
+  archived_at?: string;
 }
 
 // ============================================

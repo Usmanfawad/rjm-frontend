@@ -132,9 +132,13 @@ export function createAppError(
 
   // Handle API response errors
   if (error && typeof error === 'object' && 'detail' in error) {
-    const apiError = error as { detail?: string; status?: number; error?: string };
+    const apiError = error as { detail?: string | unknown[]; status?: number; error?: string };
     const status = apiError.status || 500;
-    const detail = apiError.detail || apiError.error || 'An error occurred';
+    // FastAPI validation errors return detail as an array
+    const rawDetail = apiError.detail || apiError.error || 'An error occurred';
+    const detail = Array.isArray(rawDetail)
+      ? rawDetail.map((d: any) => d.msg || String(d)).join('; ')
+      : String(rawDetail);
     
     return {
       type: getErrorTypeFromStatus(status),
