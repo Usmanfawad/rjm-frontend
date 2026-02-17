@@ -6,19 +6,19 @@ import { Sparkles, MessageSquare, FileText, Settings } from 'lucide-react';
 
 const actions = [
   {
-    href: '/generator',
+    href: '/campaigns/new',
     icon: Sparkles,
-    label: 'Build Program',
+    label: 'New Campaign',
     description: 'Create persona program',
   },
   {
     href: '/chat',
     icon: MessageSquare,
-    label: 'MIRA Chat',
+    label: 'Chat with MIRA',
     description: 'Start conversation',
   },
   {
-    href: '/documents',
+    href: '/settings/documents',
     icon: FileText,
     label: 'Documents',
     description: 'Manage documents',

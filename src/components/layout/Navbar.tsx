@@ -16,14 +16,11 @@ export function Navbar() {
 
   const navLinks = isAuthenticated
     ? [
-        { href: '/dashboard', label: 'Dashboard' },
-        { href: '/generator', label: 'Build Program' },
-        { href: '/personas', label: 'Program Library' },
-        { href: '/chat', label: 'Chat with MIRA' },
-        { href: '/documents', label: 'Documents' },
-        { href: '/organizations', label: 'Organizations' },
-        { href: '/governance', label: 'Governance' },
-        { href: '/cultural', label: 'Cultural' },
+        { href: '/workspace', label: 'Workspace' },
+        { href: '/campaigns', label: 'Campaigns' },
+        { href: '/chat', label: 'Chat' },
+        { href: '/activation', label: 'Activation' },
+        { href: '/settings', label: 'Settings' },
       ]
     : [
         { href: '/', label: 'Home' },
@@ -36,7 +33,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={isAuthenticated ? '/dashboard' : '/'} className="flex items-center space-x-2">
+          <Link href={isAuthenticated ? '/workspace' : '/'} className="flex items-center space-x-2">
             <span className="text-2xl font-bold tracking-tight">
               <span className="text-[var(--primary)]">M</span>IRA
             </span>
@@ -50,13 +47,13 @@ export function Navbar() {
                 href={link.href}
                 className={cn(
                   'px-4 py-2 text-sm font-medium transition-colors relative',
-                  pathname === link.href
+                  pathname.startsWith(link.href)
                     ? 'text-[var(--primary)]'
                     : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                 )}
               >
                 {link.label}
-                {pathname === link.href && (
+                {pathname.startsWith(link.href) && (
                   <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-[var(--primary)]" />
                 )}
               </Link>
