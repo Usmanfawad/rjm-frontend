@@ -23,9 +23,9 @@ interface CampaignDetailProps {
   campaign: CampaignView;
   onRegister?: () => Promise<void>;
   onTransition?: (toState: string) => Promise<void>;
-  onRegenerate?: () => void;
-  onDuplicate?: () => void;
-  onSaveDraft?: () => void;
+  onRegenerate?: () => Promise<void>;
+  onDuplicate?: () => Promise<void>;
+  onSaveDraft?: () => Promise<void>;
   onExport?: () => void;
 }
 

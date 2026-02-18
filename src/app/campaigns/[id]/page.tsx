@@ -22,9 +22,11 @@ export default function CampaignDetailPage() {
   // Track governance object locally so we can update after register/transition
   const [governedObj, setGovernedObj] = useState<GovernedObjectResponse | null>(null);
   const [govLoaded, setGovLoaded] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   // Fetch generations
-  const { data: generations, loading: genLoading } = useApiQuery(
+  const { data: generations, loading: genLoading, refetch: refetchGenerations } = useApiQuery(
     () => api.getPersonaGenerations(100, 0),
     { enabled: isReady },
   );
@@ -115,6 +117,73 @@ export default function CampaignDetailPage() {
     }
   }, [governedObj, toast]);
 
+  // Regenerate — re-run generation with the same brand/brief, navigate to new campaign
+  const handleRegenerate = useCallback(async () => {
+    if (!generation || regenerating) return;
+    setRegenerating(true);
+    toast('Regenerating program...', 'info');
+
+    try {
+      const res = await api.generateProgram({
+        brand_name: generation.brand_name,
+        brief: generation.brief,
+      });
+
+      if (res.success && res.data?.generation_id) {
+        toast('New program generated.', 'success');
+        // Refetch so the new generation is in the list, then navigate
+        await refetchGenerations();
+        router.push(`/campaigns/${res.data.generation_id}`);
+      } else {
+        toast(res.message || 'Regeneration failed.', 'error');
+      }
+    } catch {
+      toast('Regeneration failed. Please try again.', 'error');
+    } finally {
+      setRegenerating(false);
+    }
+  }, [generation, regenerating, toast, refetchGenerations, router]);
+
+  // Duplicate — re-run generation with the same inputs, stay on current page until done
+  const handleDuplicate = useCallback(async () => {
+    if (!generation || duplicating) return;
+    setDuplicating(true);
+    toast('Duplicating campaign...', 'info');
+
+    try {
+      const res = await api.generateProgram({
+        brand_name: generation.brand_name,
+        brief: generation.brief,
+      });
+
+      if (res.success && res.data?.generation_id) {
+        toast('Campaign duplicated. Redirecting...', 'success');
+        await refetchGenerations();
+        router.push(`/campaigns/${res.data.generation_id}`);
+      } else {
+        toast(res.message || 'Duplication failed.', 'error');
+      }
+    } catch {
+      toast('Duplication failed. Please try again.', 'error');
+    } finally {
+      setDuplicating(false);
+    }
+  }, [generation, duplicating, toast, refetchGenerations, router]);
+
+  // Save Draft — register as governance object in draft state if not already registered
+  const handleSaveDraft = useCallback(async () => {
+    if (!generation) return;
+
+    // Already registered — just confirm
+    if (governedObj) {
+      toast('Campaign is already saved as a draft.', 'info');
+      return;
+    }
+
+    // Register it (creates in draft state automatically)
+    await handleRegister();
+  }, [generation, governedObj, handleRegister, toast]);
+
   if (!isReady || genLoading || govLoading) {
     return <LoadingSpinner fullScreen message="Loading campaign..." />;
   }
@@ -155,6 +224,9 @@ export default function CampaignDetailPage() {
           campaign={campaign}
           onRegister={handleRegister}
           onTransition={handleTransition}
+          onRegenerate={handleRegenerate}
+          onDuplicate={handleDuplicate}
+          onSaveDraft={handleSaveDraft}
         />
       </div>
     </PageLayout>
