@@ -1,35 +1,15 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui';
-
-const features = [
-  {
-    title: 'Mission',
-    description:
-      'Amplify authentic voices and transform how brands connect with diverse communities through culturally-intelligent personas.',
-  },
-  {
-    title: 'Genesis',
-    description:
-      'Born from a vision to bridge cultural understanding and marketing strategy, MIRA represents the evolution of audience intelligence.',
-  },
-  {
-    title: 'Vision',
-    description:
-      'A future where every brand message resonates authentically, powered by deep cultural insights and AI-driven persona generation.',
-  },
-];
-
 const capabilities = [
   {
     number: '01',
     title: 'Persona Intelligence',
-    description: 'Access 300+ culturally-mapped personas across 13 advertising categories.',
+    description: '300+ culturally-mapped personas across 13 advertising categories, selected and ranked by AI.',
   },
   {
     number: '02',
     title: 'Cultural Mapping',
-    description: '22 cultural phyla and 6 multicultural expression lineages for authentic targeting.',
+    description: '22 cultural phyla and 6 multicultural expression lineages for identity-based targeting.',
   },
   {
     number: '03',
@@ -44,12 +24,12 @@ const capabilities = [
   {
     number: '05',
     title: 'AI Generation',
-    description: 'Instant persona programs tailored to your brand brief and campaign objectives.',
+    description: 'Structured persona frameworks tailored to your brand brief and campaign objectives.',
   },
   {
     number: '06',
     title: 'Activation Plans',
-    description: 'Strategic recommendations with cultural touchpoints and media guidance.',
+    description: 'Persona-driven deployment strategies with channel reasoning and media guidance.',
   },
 ];
 
@@ -57,22 +37,20 @@ export function Features() {
   return (
     <section className="py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Core Values */}
-        <div className="grid md:grid-cols-3 gap-8 mb-32">
-          {features.map((feature, index) => (
-            <div
-              key={feature.title}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <h3 className="text-sm font-medium text-[var(--primary)] uppercase tracking-wider mb-4">
-                {feature.title}
-              </h3>
-              <p className="text-lg leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
-          ))}
+        {/* What MIRA Does */}
+        <div className="mb-32 max-w-3xl">
+          <h2 className="text-sm font-medium text-[var(--primary)] uppercase tracking-wider mb-4">
+            What MIRA Persona Engine Does
+          </h2>
+          <p className="text-2xl sm:text-3xl font-bold leading-relaxed mb-6">
+            MIRA Persona Engine translates brand inputs into structured, activation-ready persona frameworks.
+          </p>
+          <p className="text-lg text-[var(--muted-foreground)] mb-2">
+            From brief to deployment in minutes.
+          </p>
+          <p className="text-lg text-[var(--muted-foreground)]">
+            Built for brands, agencies, platforms, and data partners.
+          </p>
         </div>
 
         {/* Capabilities */}
@@ -82,7 +60,7 @@ export function Features() {
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {capabilities.map((capability, index) => (
+            {capabilities.map((capability) => (
               <div
                 key={capability.number}
                 className="group hover-lift p-6 border border-[var(--border)] rounded-lg transition-all hover:border-[var(--primary)]"

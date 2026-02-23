@@ -68,7 +68,7 @@ export default function CampaignsPage() {
           <div>
             <h1 className="text-2xl font-bold">Campaigns</h1>
             <p className="text-sm text-[var(--muted-foreground)] mt-1">
-              {campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''}
+              Build, refine, and activate persona-driven campaigns.
             </p>
           </div>
           <button
@@ -76,7 +76,7 @@ export default function CampaignsPage() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="h-4 w-4" />
-            New Campaign
+            Build Campaign
           </button>
         </div>
 
@@ -109,7 +109,7 @@ export default function CampaignsPage() {
             title="No campaigns yet"
             description="Create your first persona program to get started."
             action={{
-              label: 'New Campaign',
+              label: 'Build Campaign',
               onClick: () => router.push(ROUTES.CAMPAIGNS_NEW),
             }}
           />

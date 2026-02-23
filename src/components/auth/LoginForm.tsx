@@ -36,12 +36,9 @@ export function LoginForm() {
     <Card variant="elevated" className="w-full max-w-md">
       <CardContent className="p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">
-            Welcome back
+          <h1 className="text-2xl font-bold">
+            Access MIRA Persona Engine
           </h1>
-          <p className="text-[var(--muted-foreground)]">
-            Sign in to continue building your persona programs
-          </p>
         </div>
 
         {error && (

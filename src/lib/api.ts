@@ -765,6 +765,30 @@ class ApiClient {
     return this.request<PersonaGeneration>(`/v1/rjm/generations/${generationId}`);
   }
 
+  async updatePersonaGeneration(
+    generationId: string,
+    updates: import('@/types/api').UpdateGenerationRequest
+  ): Promise<ApiResponse<PersonaGeneration>> {
+    return this.request<PersonaGeneration>(`/v1/rjm/generations/${generationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async searchPersonaCanon(
+    query?: string,
+    category?: string,
+    limit: number = 50
+  ): Promise<ApiResponse<import('@/types/api').PersonaCanonSearchResponse>> {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (category) params.set('category', category);
+    params.set('limit', String(limit));
+    return this.request<import('@/types/api').PersonaCanonSearchResponse>(
+      `/v1/rjm/personas?${params.toString()}`
+    );
+  }
+
   // Health endpoints
   async checkHealth(): Promise<ApiResponse<{ status: string }>> {
     return this.request<{ status: string }>('/health/db');

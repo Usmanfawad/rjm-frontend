@@ -146,12 +146,12 @@ export const ChatContainer = forwardRef<ChatContainerRef, ChatContainerProps>(
                 <Bot className="h-8 w-8 text-[var(--background)]" />
               </div>
               <h2 className="text-xl font-semibold mb-2">
-                {campaignContext ? `Refine ${campaignContext.brand_name}` : 'Chat with MIRA'}
+                {campaignContext ? `Refining: ${campaignContext.brand_name}` : 'Strategic Conversation'}
               </h2>
               <p className="text-[var(--muted-foreground)] max-w-md">
                 {campaignContext
-                  ? `Campaign context for ${campaignContext.brand_name} is loaded. Ask me to refine personas, adjust the cultural layer, or regenerate the program.`
-                  : "I\u0027m your AI cultural intelligence assistant. Tell me about your brand and campaign goals, and I\u0027ll help you create powerful persona programs."}
+                  ? `Campaign context for ${campaignContext.brand_name} is loaded. Ask me to refine personas, adjust the cultural layer, or regenerate the framework.`
+                  : 'Ask about a brand, audience, campaign, or activation strategy.'}
               </p>
             </div>
           ) : (

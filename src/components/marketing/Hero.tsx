@@ -1,8 +1,37 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { ArrowRight } from 'lucide-react';
+
+const ROTATING_WORDS = ['Culture', 'Identity', 'Behavior', 'Audience', 'Strategy', 'Activation'];
+
+function RotatingWord() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((prev) => (prev + 1) % ROTATING_WORDS.length);
+        setVisible(true);
+      }, 400);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span
+      className={`text-2xl sm:text-3xl font-bold text-[var(--primary)] transition-opacity duration-400 ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      {ROTATING_WORDS[index]}
+    </span>
+  );
+}
 
 export function Hero() {
   return (
@@ -19,59 +48,37 @@ export function Hero() {
         <div className="max-w-4xl">
           {/* Main Heading */}
           <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight mb-8 animate-fade-in">
-            Cultural Media
+            Cultural Intelligence for
             <br />
-            <span className="text-[var(--primary)]">Reimagined</span>
+            <span className="text-[var(--primary)]">Modern Marketers</span>
           </h1>
 
           {/* Subheading */}
           <p className="text-xl sm:text-2xl text-[var(--muted-foreground)] mb-12 max-w-2xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Empowering authentic voices through AI-powered persona intelligence.
-            Connect with audiences through cultural understanding.
+            Build persona-driven campaigns rooted in culture, identity, and real consumer behavior — then activate them instantly.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <Link href="/register">
               <Button size="lg" className="min-w-[200px] group">
-                Get Started
+                Enter Persona Engine
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="/features">
               <Button variant="outline" size="lg" className="min-w-[200px]">
-                Learn More
+                How It Works
               </Button>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Marquee Section */}
+      {/* Rotating Words Section */}
       <div className="border-t border-b border-[var(--border)] py-6 overflow-hidden">
-        <div className="animate-marquee whitespace-nowrap">
-          <span className="inline-flex items-center text-lg sm:text-xl font-medium">
-            <span className="mx-8">Authenticity</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Creativity</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Community</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Relatability</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Expression</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Authenticity</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Creativity</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Community</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Relatability</span>
-            <span className="text-[var(--primary)]">/</span>
-            <span className="mx-8">Expression</span>
-            <span className="text-[var(--primary)]">/</span>
-          </span>
+        <div className="flex justify-center">
+          <RotatingWord />
         </div>
       </div>
     </section>

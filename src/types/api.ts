@@ -381,6 +381,22 @@ export interface PersonaGenerationListResponse {
   total: number;
 }
 
+export interface PersonaCanonEntry {
+  name: string;
+  category: string;
+}
+
+export interface PersonaCanonSearchResponse {
+  personas: PersonaCanonEntry[];
+  total: number;
+}
+
+export interface UpdateGenerationRequest {
+  program_json?: ProgramJSON;
+  program_text?: string;
+  brand_name?: string;
+}
+
 // Chat Session Types
 export interface ChatSession {
   id: string;

@@ -27,10 +27,10 @@ export default function ActivationPage() {
           title={
             <div className="flex items-center gap-2">
               <Zap className="h-8 w-8" />
-              Activation
+              Activation Pipeline
             </div>
           }
-          description="Manage the lifecycle of your campaigns from draft through activation"
+          description=""
         />
 
         {error && (

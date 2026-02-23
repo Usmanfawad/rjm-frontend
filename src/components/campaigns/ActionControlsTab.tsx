@@ -2,14 +2,12 @@
 
 import { useState } from 'react';
 import {
-  CheckCircle,
   Send,
-  Archive,
   Copy,
   Check,
   ArrowRight,
   Shield,
-  Play,
+  Download,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { CampaignLifecycleBadge } from './CampaignLifecycleBadge';
@@ -65,12 +63,15 @@ export function ActionControlsTab({
 
   return (
     <div className="space-y-6">
-      {/* Current State */}
+      {/* Header */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>Campaign State</CardTitle>
+          <CardTitle>Launch Persona Campaign</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-sm text-[var(--muted-foreground)] mb-4">
+            Move from strategy to live execution.
+          </p>
           <div className="flex items-center gap-3">
             <CampaignLifecycleBadge state={state} />
             {campaign.governance_id && (
@@ -82,14 +83,14 @@ export function ActionControlsTab({
         </CardContent>
       </Card>
 
-      {/* Lifecycle Actions */}
+      {/* Actions */}
       <Card variant="elevated">
         <CardHeader>
           <CardTitle>Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* Step 0: Register — only when not yet governed */}
+            {/* Submit for Activation */}
             {!isGoverned && (
               <button
                 onClick={handleRegister}
@@ -99,9 +100,9 @@ export function ActionControlsTab({
                 <span className="flex items-center gap-3">
                   <Shield className="h-5 w-5 text-[var(--primary)]" />
                   <div className="text-left">
-                    <p className="text-sm font-medium">Register Campaign</p>
+                    <p className="text-sm font-medium">Submit for Activation</p>
                     <p className="text-xs text-[var(--muted-foreground)]">
-                      Start the activation lifecycle
+                      Register and begin the activation lifecycle
                     </p>
                   </div>
                 </span>
@@ -109,7 +110,7 @@ export function ActionControlsTab({
               </button>
             )}
 
-            {/* Step 1: Draft → Approved (Submit for Review) */}
+            {/* Progress through lifecycle if governed */}
             {isGoverned && (state === 'ideation' || state === 'draft') && (
               <button
                 onClick={() => handleTransition('approved')}
@@ -117,9 +118,9 @@ export function ActionControlsTab({
                 className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-green-400 hover:bg-green-500/5 transition-colors disabled:opacity-50"
               >
                 <span className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <Send className="h-5 w-5 text-green-500" />
                   <div className="text-left">
-                    <p className="text-sm font-medium">Submit for Review</p>
+                    <p className="text-sm font-medium">Submit for Activation</p>
                     <p className="text-xs text-[var(--muted-foreground)]">
                       Move to approval workflow
                     </p>
@@ -129,7 +130,6 @@ export function ActionControlsTab({
               </button>
             )}
 
-            {/* Step 2: Approved → Requested for Activation (Finalize) */}
             {state === 'review' && (
               <button
                 onClick={() => handleTransition('requested_for_activation')}
@@ -137,7 +137,7 @@ export function ActionControlsTab({
                 className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-green-400 hover:bg-green-500/5 transition-colors disabled:opacity-50"
               >
                 <span className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <Send className="h-5 w-5 text-green-500" />
                   <div className="text-left">
                     <p className="text-sm font-medium">Finalize</p>
                     <p className="text-xs text-[var(--muted-foreground)]">
@@ -149,7 +149,6 @@ export function ActionControlsTab({
               </button>
             )}
 
-            {/* Step 3: Requested → In Progress (Send to Activation) */}
             {state === 'finalized' && (
               <button
                 onClick={() => handleTransition('in_progress')}
@@ -169,66 +168,42 @@ export function ActionControlsTab({
               </button>
             )}
 
-            {/* Step 4: In Progress → Live (Go Live) */}
-            {state === 'activated' && (
-              <button
-                onClick={() => handleTransition('live')}
-                disabled={transitioning}
-                className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-emerald-400 hover:bg-emerald-500/5 transition-colors disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <Play className="h-5 w-5 text-emerald-500" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Go Live</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      Mark campaign as live in market
-                    </p>
-                  </div>
-                </span>
-                <ArrowRight className="h-4 w-4 text-[var(--muted-foreground)]" />
-              </button>
-            )}
-
-            {/* Archive — available on all governed non-archived states */}
-            {isGoverned && state !== 'archived' && (
-              <button
-                onClick={() => handleTransition('archived')}
-                disabled={transitioning}
-                className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-red-400 hover:bg-red-500/5 transition-colors disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <Archive className="h-5 w-5 text-red-500" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Archive</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      Archive this campaign
-                    </p>
-                  </div>
-                </span>
-                <ArrowRight className="h-4 w-4 text-[var(--muted-foreground)]" />
-              </button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Export */}
-      <Card variant="elevated">
-        <CardHeader>
-          <CardTitle>Export</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
+            {/* Export Persona Framework */}
             <button
               onClick={handleCopyText}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--border)] hover:bg-[var(--accent)] transition-colors text-sm"
+              className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
             >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-              {copied ? 'Copied' : 'Copy Program Text'}
+              <span className="flex items-center gap-3">
+                {copied ? (
+                  <Check className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Download className="h-5 w-5 text-[var(--muted-foreground)]" />
+                )}
+                <div className="text-left">
+                  <p className="text-sm font-medium">
+                    {copied ? 'Copied' : 'Export Persona Framework'}
+                  </p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Copy full program text to clipboard
+                  </p>
+                </div>
+              </span>
+            </button>
+
+            {/* Duplicate Campaign */}
+            <button
+              onClick={onExport}
+              className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                <Copy className="h-5 w-5 text-[var(--muted-foreground)]" />
+                <div className="text-left">
+                  <p className="text-sm font-medium">Duplicate Campaign</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Copy as new campaign
+                  </p>
+                </div>
+              </span>
             </button>
           </div>
         </CardContent>
