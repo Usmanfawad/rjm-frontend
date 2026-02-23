@@ -60,7 +60,7 @@ export default function ChatPage() {
           <div className="flex items-center justify-between px-4 py-2 bg-[var(--accent)] border-b border-[var(--border)]">
             <div className="flex items-center gap-2 text-sm">
               <Sparkles className="h-4 w-4 text-[var(--primary)]" />
-              <span className="font-medium">Campaign context:</span>
+              <span className="font-medium">Refining:</span>
               <span className="text-[var(--muted-foreground)]">
                 {linkedCampaign.brand_name}
               </span>

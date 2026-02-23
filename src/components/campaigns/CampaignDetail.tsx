@@ -4,19 +4,17 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { CampaignOverviewTab } from './CampaignOverviewTab';
 import { PersonaFrameworkTab } from './PersonaFrameworkTab';
-import { CulturalLayerTab } from './CulturalLayerTab';
 import { RefinementTab } from './RefinementTab';
 import { ActionControlsTab } from './ActionControlsTab';
 import type { CampaignView } from '@/types/api';
 
-type TabKey = 'overview' | 'personas' | 'cultural' | 'refinement' | 'actions';
+type TabKey = 'overview' | 'personas' | 'refinement' | 'activation';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'personas', label: 'Personas' },
-  { key: 'cultural', label: 'Cultural' },
+  { key: 'personas', label: 'Persona Framework' },
   { key: 'refinement', label: 'Refinement' },
-  { key: 'actions', label: 'Actions' },
+  { key: 'activation', label: 'Activation' },
 ];
 
 interface CampaignDetailProps {
@@ -75,7 +73,6 @@ export function CampaignDetail({
       <div>
         {activeTab === 'overview' && <CampaignOverviewTab campaign={campaign} />}
         {activeTab === 'personas' && <PersonaFrameworkTab campaign={campaign} />}
-        {activeTab === 'cultural' && <CulturalLayerTab campaign={campaign} />}
         {activeTab === 'refinement' && (
           <RefinementTab
             campaign={campaign}
@@ -84,7 +81,7 @@ export function CampaignDetail({
             onSaveDraft={onSaveDraft}
           />
         )}
-        {activeTab === 'actions' && (
+        {activeTab === 'activation' && (
           <ActionControlsTab
             campaign={campaign}
             onRegister={onRegister}

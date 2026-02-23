@@ -63,27 +63,27 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-blue-600" />
-          Build Your Persona Program
+          Build Persona Campaign
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
-            label="Brand Name"
-            placeholder="Enter your brand name"
+            label="Brand or Organization"
+            placeholder="Enter your brand or organization name"
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             error={!brandName && error ? 'Brand name is required' : undefined}
           />
 
           <Textarea
-            label="Campaign Brief"
-            placeholder="Describe your campaign objectives, target audience, and any specific requirements..."
+            label="Campaign Objective (Optional)"
+            placeholder="Describe what you're launching, promoting, or trying to achieve."
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
             rows={6}
-            error={!brief && error ? 'Brief is required' : undefined}
-            helperText="Be specific about your target demographics, campaign goals, and cultural contexts for optimal results."
+            error={!brief && error ? 'Objective is required' : undefined}
+            helperText="Describe what you're launching, promoting, or trying to achieve."
           />
 
           <DocumentSelector
@@ -98,7 +98,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
             className="flex items-center gap-1 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
           >
             {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            Cultural Activation Options
+            Attach Brief (Optional)
           </button>
 
           {showAdvanced && (
@@ -116,7 +116,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
                 onChange={(e) => setDmasInput(e.target.value)}
               />
               <p className="text-xs text-[var(--muted-foreground)]">
-                Leave blank to let MIRA automatically detect cultural signals from your brief.
+                Upload RFPs, strategy documents, or brand materials to inform generation.
               </p>
             </div>
           )}
@@ -133,12 +133,12 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Building your persona program...
+                Generating persona framework...
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Build Program
+                Generate Persona Framework
               </>
             )}
           </Button>

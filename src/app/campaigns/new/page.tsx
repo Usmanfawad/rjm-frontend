@@ -35,11 +35,11 @@ export default function NewCampaignPage() {
     <PageLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
-          title={result ? 'Your Persona Program' : 'New Campaign'}
+          title={result ? 'Your Persona Framework' : 'Build Persona Campaign'}
           description={
             result
-              ? 'Your persona program is ready for review and activation.'
-              : 'Enter your brand details and campaign brief to build a customized persona program.'
+              ? 'Your persona framework is ready for review and activation.'
+              : 'Enter your brand details and campaign objective to generate a persona framework.'
           }
         >
           {result ? (
