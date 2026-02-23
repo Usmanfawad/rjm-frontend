@@ -141,24 +141,54 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
     setShowSuggestions(false);
   };
 
-  const applyChanges = () => {
-    const lockedNames = editablePersonas.filter((p) => p.locked).map((p) => p.name);
+  const [applying, setApplying] = useState(false);
+
+  const applyChanges = async () => {
     const currentNames = editablePersonas.map((p) => p.name);
     const originalNames = pj?.personas?.map((p) => p.name) || [];
-
     const added = currentNames.filter((n) => !originalNames.includes(n));
-    const removed = originalNames.filter((n) => !currentNames.includes(n));
 
-    let instruction = `Rebuild this campaign with the following persona changes:`;
-    if (removed.length > 0) instruction += ` Remove: ${removed.join(', ')}.`;
-    if (added.length > 0) instruction += ` Add: ${added.join(', ')}.`;
-    if (lockedNames.length > 0) instruction += ` Keep locked (must remain): ${lockedNames.join(', ')}.`;
-    instruction += ` Final portfolio should have ${currentNames.length} personas in this order: ${currentNames.join(', ')}.`;
-    instruction += ` Recalculate portfolio, insights, activation plan, and cultural overlays.`;
+    // If new personas were added, route to chat for full LLM regeneration
+    if (added.length > 0) {
+      const lockedNames = editablePersonas.filter((p) => p.locked).map((p) => p.name);
+      const removed = originalNames.filter((n) => !currentNames.includes(n));
+      let instruction = `Rebuild this campaign with the following persona changes:`;
+      if (removed.length > 0) instruction += ` Remove: ${removed.join(', ')}.`;
+      if (added.length > 0) instruction += ` Add: ${added.join(', ')}.`;
+      if (lockedNames.length > 0) instruction += ` Keep locked (must remain): ${lockedNames.join(', ')}.`;
+      instruction += ` Final portfolio should have ${currentNames.length} personas in this order: ${currentNames.join(', ')}.`;
+      instruction += ` Recalculate portfolio, insights, activation plan, and cultural overlays.`;
+      const encoded = encodeURIComponent(instruction);
+      router.push(`/chat?campaign_id=${campaign.id}&prefill=${encoded}`);
+      setEditMode(false);
+      return;
+    }
 
-    const encoded = encodeURIComponent(instruction);
-    router.push(`/chat?campaign_id=${campaign.id}&prefill=${encoded}`);
-    setEditMode(false);
+    // For removals and reorders only, apply directly via PATCH
+    setApplying(true);
+    try {
+      const updatedPersonas = editablePersonas.map((ep) => {
+        const original = pj?.personas?.find((p) => p.name === ep.name);
+        return original || { name: ep.name, highlight: ep.highlight, phylum: ep.phylum };
+      });
+      const updatedJson = { ...pj, personas: updatedPersonas };
+      const res = await api.updatePersonaGeneration(campaign.id, {
+        program_json: updatedJson as import('@/types/api').ProgramJSON,
+      });
+      if (res.success) {
+        // Reload the page to reflect changes
+        window.location.reload();
+      }
+    } catch {
+      // Fallback: route to chat if PATCH fails
+      const removed = originalNames.filter((n) => !currentNames.includes(n));
+      let instruction = `Rebuild this campaign: Remove ${removed.join(', ')}. Keep ${currentNames.length} personas.`;
+      const encoded = encodeURIComponent(instruction);
+      router.push(`/chat?campaign_id=${campaign.id}&prefill=${encoded}`);
+    } finally {
+      setApplying(false);
+      setEditMode(false);
+    }
   };
 
   const cancelEdit = () => {
@@ -365,9 +395,10 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     onClick={applyChanges}
-                    className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity"
+                    disabled={applying}
+                    className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
                   >
-                    Apply Changes
+                    {applying ? 'Applying...' : 'Apply Changes'}
                   </button>
                   <button
                     onClick={cancelEdit}

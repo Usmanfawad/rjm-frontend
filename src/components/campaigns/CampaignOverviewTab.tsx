@@ -1,6 +1,7 @@
 'use client';
 
-import { Calendar, FileText, Tag, CheckCircle, XCircle, AlertTriangle, Paperclip } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, FileText, Tag, CheckCircle, XCircle, AlertTriangle, Paperclip, Copy, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { CampaignLifecycleBadge } from './CampaignLifecycleBadge';
 import type { CampaignView, DocumentContextEntry } from '@/types/api';
@@ -20,6 +21,18 @@ const DOC_STATUS_CONFIG: Record<DocumentContextEntry['status'], {
 };
 
 export function CampaignOverviewTab({ campaign }: CampaignOverviewTabProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(campaign.program_text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API failed silently
+    }
+  };
+
   const createdDate = new Date(campaign.created_at).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -120,6 +133,41 @@ export function CampaignOverviewTab({ campaign }: CampaignOverviewTabProps) {
           </p>
         </CardContent>
       </Card>
+
+      {/* Full Program Write-Up */}
+      {campaign.program_text && (
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[var(--primary)]" />
+                Persona Program Write-Up
+              </span>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] hover:bg-[var(--accent)] transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-sm text-[var(--muted-foreground)] whitespace-pre-wrap font-sans leading-relaxed">
+              {campaign.program_text}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
