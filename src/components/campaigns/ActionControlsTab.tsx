@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Shield,
   Download,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { CampaignLifecycleBadge } from './CampaignLifecycleBadge';
@@ -82,6 +83,41 @@ export function ActionControlsTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Full Program Write-Up */}
+      {campaign.program_text && (
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[var(--primary)]" />
+                Persona Program Write-Up
+              </span>
+              <button
+                onClick={handleCopyText}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] hover:bg-[var(--accent)] transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-sm text-[var(--muted-foreground)] whitespace-pre-wrap font-sans leading-relaxed">
+              {campaign.program_text}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions */}
       <Card variant="elevated">
