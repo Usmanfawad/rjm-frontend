@@ -24,11 +24,15 @@ export function LoginForm() {
       return;
     }
 
-    const result = await login({ email, password });
-    if (result.success) {
-      router.push('/dashboard');
-    } else {
-      setError(result.error || 'Login failed');
+    try {
+      const result = await login({ email, password });
+      if (result?.success) {
+        router.push('/workspace');
+      } else {
+        setError(result?.error || 'Login failed');
+      }
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -85,14 +89,7 @@ export function LoginForm() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:ring-[var(--foreground)]"
-              />
-              <span className="ml-2 text-sm text-[var(--muted-foreground)]">Remember me</span>
-            </label>
+          <div className="flex items-center justify-end">
             <Link
               href="/forgot-password"
               className="text-sm text-[var(--primary)] hover:opacity-80 transition-opacity"

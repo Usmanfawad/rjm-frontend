@@ -69,6 +69,15 @@ export function DocumentCard({ document, onDelete }: DocumentCardProps) {
           </p>
         )}
 
+        {document.summary && (
+          <div className="mb-3 p-2.5 rounded-lg bg-[var(--accent)]/50 border border-[var(--border)]">
+            <p className="text-xs font-medium text-[var(--muted-foreground)] mb-1">Generated Brief</p>
+            <p className="text-sm text-[var(--foreground)] line-clamp-3">
+              {document.summary}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-2 mb-4 text-xs text-[var(--muted-foreground)]">
           <span className="flex items-center gap-1">
             <span className="font-medium">{formatFileSize(document.file_size)}</span>

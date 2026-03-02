@@ -43,7 +43,7 @@ export const ROUTES = {
   SETTINGS_DOCUMENTS_SEARCH: '/settings/documents/search',
 
   // Legacy aliases (for redirects)
-  DASHBOARD: '/dashboard',
+  DASHBOARD: '/workspace',
   GENERATOR: '/generator',
   PERSONAS: '/personas',
   DOCUMENTS: '/documents',

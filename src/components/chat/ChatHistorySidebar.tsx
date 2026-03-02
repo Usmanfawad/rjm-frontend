@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
 import type { ChatSession } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui';
@@ -45,6 +46,7 @@ export function ChatHistorySidebar({
   isCollapsed = false,
   onToggleCollapse,
 }: ChatHistorySidebarProps) {
+  const { toast } = useToast();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -56,8 +58,8 @@ export function ChatHistorySidebar({
       if (response.success && response.data) {
         setSessions(response.data.sessions);
       }
-    } catch (error) {
-      console.error('Failed to fetch chat sessions:', error);
+    } catch {
+      toast('Failed to load chat history.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -94,8 +96,8 @@ export function ChatHistorySidebar({
         }
         setSessionToDelete(null);
       }
-    } catch (error) {
-      console.error('Failed to delete session:', error);
+    } catch {
+      toast('Failed to delete conversation.', 'error');
     } finally {
       setDeletingId(null);
     }

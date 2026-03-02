@@ -16,9 +16,9 @@ export function CTA() {
           </h2>
 
           <div className="text-xl text-[var(--muted-foreground)] mb-12 max-w-xl space-y-4">
-            <p>MIRA Persona Engine translates brand inputs into structured, activation-ready persona frameworks.</p>
+            <p>MIRA Persona Engine turns brand inputs into structured, activation-ready persona frameworks.</p>
             <p>From brief to deployment in minutes.</p>
-            <p>Built for brands, agencies, platforms, and data partners.</p>
+            <p>Built for brands, agencies, platforms, publishers, and data partners.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">

@@ -157,6 +157,7 @@ export interface Document {
   org_id?: string;
   tags?: string[];
   description?: string;
+  summary?: string;
   created_at: string;
   updated_at: string;
 }
@@ -268,6 +269,12 @@ export interface ProgramJSON {
   multicultural_lineages?: string[];
   local_culture_segments: string[];
   cultural_activation_summary?: string;
+  activation_summary?: {
+    primary_channels?: string | string[];
+    supporting_channels?: string | string[];
+    channel_weighting?: Record<string, string> | string;
+    flighting_approach?: string;
+  };
   persona_insights: string[];
   demos: {
     core?: string;
@@ -287,6 +294,7 @@ export interface ProgramJSON {
 export interface DocumentContextEntry {
   id: string;
   title: string | null;
+  summary?: string | null;
   status: 'applied' | 'not_available' | 'error';
 }
 
@@ -641,11 +649,9 @@ export interface GovernanceListQuery {
 // ============================================
 
 export type CampaignLifecycleState =
-  | 'ideation'
-  | 'draft'
-  | 'review'
-  | 'finalized'
-  | 'activated'
+  | 'proposal'
+  | 'activation_requested'
+  | 'live'
   | 'archived';
 
 /**
@@ -662,7 +668,7 @@ export interface CampaignView {
   source: 'generator' | 'chat';
   created_at: string;
 
-  // Lifecycle state (derived from governance or default to ideation)
+  // Lifecycle state (derived from governance or default to proposal)
   lifecycle_state: CampaignLifecycleState;
 
   // Governance fields (optional — only present if governed)

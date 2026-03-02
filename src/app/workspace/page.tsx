@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { CampaignLifecycleBadge } from '@/components/campaigns/CampaignLifecycleBadge';
 import { toCampaignView } from '@/lib/campaign-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Sparkles, Zap, Clock, FileText } from 'lucide-react';
+import { Sparkles, Zap, FileText } from 'lucide-react';
 import type { CampaignView } from '@/types/api';
 
 function CampaignModuleCard({
@@ -38,6 +38,11 @@ function CampaignModuleCard({
   const hasDocContext = campaign.program_json?._document_context;
   const contextStatus = hasDocContext ? 'Applied' : 'Not Applied';
 
+  // For live campaigns, prefer activated_at date
+  const displayDate = campaign.lifecycle_state === 'live' && campaign.activated_at
+    ? campaign.activated_at
+    : campaign.created_at;
+
   return (
     <button
       onClick={onClick}
@@ -50,7 +55,7 @@ function CampaignModuleCard({
         <CampaignLifecycleBadge state={campaign.lifecycle_state} />
       </div>
       <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-        <span>{formatDate(campaign.created_at)}</span>
+        <span>{formatDate(displayDate)}</span>
         <span
           className={
             contextStatus === 'Applied'
@@ -58,7 +63,7 @@ function CampaignModuleCard({
               : 'text-[var(--muted-foreground)]'
           }
         >
-          Context: {contextStatus}
+          Brief: {contextStatus}
         </span>
       </div>
     </button>
@@ -89,25 +94,13 @@ export default function WorkspacePage() {
     );
   }, [generations, govData]);
 
-  const activeCampaigns = useMemo(
-    () => campaigns.filter((c) => ['ideation', 'draft', 'review'].includes(c.lifecycle_state)),
+  const proposals = useMemo(
+    () => campaigns.filter((c) => c.lifecycle_state === 'proposal' || c.lifecycle_state === 'activation_requested'),
     [campaigns],
   );
 
-  const readyForActivation = useMemo(
-    () => campaigns.filter((c) => c.lifecycle_state === 'finalized'),
-    [campaigns],
-  );
-
-  const recentlyUpdated = useMemo(
-    () =>
-      [...campaigns]
-        .sort((a, b) => {
-          const da = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const db = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return db - da;
-        })
-        .slice(0, 5),
+  const liveCampaigns = useMemo(
+    () => campaigns.filter((c) => c.lifecycle_state === 'live'),
     [campaigns],
   );
 
@@ -128,28 +121,30 @@ export default function WorkspacePage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold">Campaign Command Center</h1>
           <p className="text-[var(--muted-foreground)] mt-1">
-            View campaign status, refine active work, and move directly to activation.
+            Manage proposals, monitor live campaigns, and control activation.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Active Campaigns */}
+          {/* Campaign Proposals */}
           <Card variant="elevated">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Sparkles className="h-5 w-5 text-[var(--primary)]" />
-                Active Campaigns
-                <span className="ml-auto text-sm font-normal text-[var(--muted-foreground)]">
-                  {activeCampaigns.length}
-                </span>
+                Campaign Proposals
+                {proposals.length > 0 && (
+                  <span className="ml-auto text-sm font-normal text-[var(--muted-foreground)]">
+                    {proposals.length}
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {activeCampaigns.length === 0 ? (
-                <p className="text-sm text-[var(--muted-foreground)]">No active campaigns.</p>
+              {proposals.length === 0 ? (
+                <p className="text-sm text-[var(--muted-foreground)]">No campaign proposals yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {activeCampaigns.slice(0, 5).map((c) => (
+                  {proposals.slice(0, 5).map((c) => (
                     <CampaignModuleCard
                       key={c.id}
                       campaign={c}
@@ -161,23 +156,25 @@ export default function WorkspacePage() {
             </CardContent>
           </Card>
 
-          {/* Ready for Activation */}
+          {/* Live Campaigns */}
           <Card variant="elevated">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Zap className="h-5 w-5 text-green-500" />
-                Ready for Activation
-                <span className="ml-auto text-sm font-normal text-[var(--muted-foreground)]">
-                  {readyForActivation.length}
-                </span>
+                <Zap className="h-5 w-5 text-emerald-500" />
+                Live Campaigns
+                {liveCampaigns.length > 0 && (
+                  <span className="ml-auto text-sm font-normal text-[var(--muted-foreground)]">
+                    {liveCampaigns.length}
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {readyForActivation.length === 0 ? (
-                <p className="text-sm text-[var(--muted-foreground)]">No campaigns ready for activation.</p>
+              {liveCampaigns.length === 0 ? (
+                <p className="text-sm text-[var(--muted-foreground)]">No live campaigns.</p>
               ) : (
                 <div className="space-y-2">
-                  {readyForActivation.slice(0, 5).map((c) => (
+                  {liveCampaigns.slice(0, 5).map((c) => (
                     <CampaignModuleCard
                       key={c.id}
                       campaign={c}
@@ -189,40 +186,17 @@ export default function WorkspacePage() {
             </CardContent>
           </Card>
 
-          {/* Recently Updated */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="h-5 w-5 text-blue-500" />
-                Recently Updated
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentlyUpdated.length === 0 ? (
-                <p className="text-sm text-[var(--muted-foreground)]">No recent campaigns.</p>
-              ) : (
-                <div className="space-y-2">
-                  {recentlyUpdated.map((c) => (
-                    <CampaignModuleCard
-                      key={c.id}
-                      campaign={c}
-                      onClick={() => navigateToCampaign(c.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Document Context Status */}
-          <Card variant="elevated">
+          {/* Brief Status */}
+          <Card variant="elevated" className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <FileText className="h-5 w-5 text-amber-500" />
-                Document Context Status
-                <span className="ml-auto text-sm font-normal text-[var(--muted-foreground)]">
-                  {documentContextCampaigns.length} applied
-                </span>
+                Brief Status
+                {documentContextCampaigns.length > 0 && (
+                  <span className="ml-auto text-sm font-normal text-[var(--muted-foreground)]">
+                    {documentContextCampaigns.length} applied
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>

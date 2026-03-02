@@ -39,7 +39,7 @@ export default function NewCampaignPage() {
           description={
             result
               ? 'Your persona framework is ready for review and activation.'
-              : 'Enter your brand details and campaign objective to generate a persona framework.'
+              : 'Provide brand details and campaign objectives to generate your persona framework.'
           }
         >
           {result ? (

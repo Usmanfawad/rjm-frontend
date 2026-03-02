@@ -3,33 +3,33 @@
 const capabilities = [
   {
     number: '01',
-    title: 'Persona Intelligence',
-    description: '300+ culturally-mapped personas across 13 advertising categories, selected and ranked by AI.',
+    title: 'Audience Architecture',
+    description: 'Identity-based persona frameworks rooted in real cultural behavior.',
   },
   {
     number: '02',
-    title: 'Cultural Mapping',
-    description: '22 cultural phyla and 6 multicultural expression lineages for identity-based targeting.',
+    title: 'Strategic Segmentation',
+    description: 'Clear audience structures aligned to brand objectives and category logic.',
   },
   {
     number: '03',
-    title: 'Generational Insights',
-    description: '32 generational segments spanning Gen Z to Boomers with behavioral mapping.',
+    title: 'Generational and Cultural Overlays',
+    description: 'Contextual refinement across cohorts and multicultural initiatives.',
   },
   {
     number: '04',
-    title: 'Local Strategy',
-    description: '125 DMA local culture segments for geographic and regional nuance.',
+    title: 'Local Intelligence',
+    description: 'DMA-level cultural nuance for geographically targeted campaigns.',
   },
   {
     number: '05',
-    title: 'AI Generation',
-    description: 'Structured persona frameworks tailored to your brand brief and campaign objectives.',
+    title: 'Framework Generation',
+    description: 'Structured persona programs built from brand briefs and campaign goals.',
   },
   {
     number: '06',
-    title: 'Activation Plans',
-    description: 'Persona-driven deployment strategies with channel reasoning and media guidance.',
+    title: 'Activation Pathways',
+    description: 'Persona-driven deployment strategies across your existing media ecosystem.',
   },
 ];
 
@@ -43,13 +43,13 @@ export function Features() {
             What MIRA Persona Engine Does
           </h2>
           <p className="text-2xl sm:text-3xl font-bold leading-relaxed mb-6">
-            MIRA Persona Engine translates brand inputs into structured, activation-ready persona frameworks.
+            MIRA Persona Engine turns brand inputs into structured, activation-ready persona frameworks.
           </p>
           <p className="text-lg text-[var(--muted-foreground)] mb-2">
             From brief to deployment in minutes.
           </p>
           <p className="text-lg text-[var(--muted-foreground)]">
-            Built for brands, agencies, platforms, and data partners.
+            Built for brands, agencies, platforms, publishers, and data partners.
           </p>
         </div>
 

@@ -50,13 +50,14 @@ export function ProgramResult({ result }: ProgramResultProps) {
 
     setRegistering(true);
     try {
-      const title = `${program.header} - ${new Date().toLocaleDateString()}`;
+      const headerText = program?.header || 'Persona Program';
+      const title = `${headerText} - ${new Date().toLocaleDateString()}`;
       const response = await api.registerObject({
         object_type: 'persona_program',
         reference_id: generation_id,
         reference_table: 'persona_generations',
         title,
-        description: `Persona program for ${program.header}`,
+        description: `Persona program for ${headerText}`,
       });
 
       if (response.success && response.data) {
@@ -114,7 +115,7 @@ export function ProgramResult({ result }: ProgramResultProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">{program.header}</CardTitle>
+              <CardTitle className="text-2xl">{program?.header || 'Persona Program'}</CardTitle>
               {program.advertising_category && (
                 <Badge variant="info" className="mt-2">{program.advertising_category}</Badge>
               )}
@@ -165,7 +166,7 @@ export function ProgramResult({ result }: ProgramResultProps) {
             expandedSections.has('identifiers') ? 'max-h-96 p-4' : 'max-h-0'
           )}>
             <div className="flex flex-wrap gap-2">
-              {program.key_identifiers.map((id, index) => (
+              {(program.key_identifiers || []).map((id, index) => (
                 <Badge key={index} variant="default" className="px-3 py-1.5 text-sm">
                   {id}
                 </Badge>
@@ -178,37 +179,25 @@ export function ProgramResult({ result }: ProgramResultProps) {
       {/* Personas */}
       <Card variant="elevated">
         <CardContent className="p-0">
-          <SectionHeader id="personas" title={`Persona Portfolio (${program.personas.length})`} icon={Users} />
+          <SectionHeader id="personas" title={`Persona Portfolio (${program.personas?.length ?? 0})`} icon={Users} />
           <div className={cn(
             'overflow-hidden transition-all duration-300',
             expandedSections.has('personas') ? 'max-h-[2000px] p-4' : 'max-h-0'
           )}>
             <div className="grid gap-3">
-              {program.personas.map((persona, index) => (
+              {(program.personas || []).map((persona, index) => (
                 <div
                   key={index}
                   className="p-4 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h4 className="font-medium text-[var(--foreground)]">
-                        {persona.name}
-                      </h4>
-                      {persona.highlight && (
-                        <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                          {persona.highlight}
-                        </p>
-                      )}
-                    </div>
-                    {(persona.category || persona.phylum) && (
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {persona.category && (
-                          <Badge variant="info" className="text-xs">{persona.category}</Badge>
-                        )}
-                        {persona.phylum && (
-                          <Badge variant="default" className="text-xs">{persona.phylum}</Badge>
-                        )}
-                      </div>
+                  <div>
+                    <h4 className="font-medium text-[var(--foreground)]">
+                      {persona.name}
+                    </h4>
+                    {persona.highlight && (
+                      <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                        {persona.highlight}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -227,7 +216,7 @@ export function ProgramResult({ result }: ProgramResultProps) {
             expandedSections.has('generations') ? 'max-h-96 p-4' : 'max-h-0'
           )}>
             <div className="grid gap-3">
-              {program.generational_segments.map((segment, index) => (
+              {(program.generational_segments || []).map((segment, index) => (
                 <div
                   key={index}
                   className="p-3 rounded-lg bg-[var(--accent)]"
@@ -288,7 +277,7 @@ export function ProgramResult({ result }: ProgramResultProps) {
             expandedSections.has('activation') ? 'max-h-96 p-4' : 'max-h-0'
           )}>
             <ul className="space-y-3">
-              {program.activation_plan.map((item, index) => (
+              {(program.activation_plan || []).map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-sm font-medium flex-shrink-0">
                     {index + 1}
@@ -302,7 +291,7 @@ export function ProgramResult({ result }: ProgramResultProps) {
       </Card>
 
       {/* Insights */}
-      {program.persona_insights.length > 0 && (
+      {program.persona_insights?.length > 0 && (
         <Card variant="elevated">
           <CardContent className="p-0">
             <SectionHeader id="insights" title="Persona Insights" icon={BarChart3} />

@@ -13,7 +13,7 @@ export default function SettingsRootLayout({
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
           title="Settings"
-          description="Manage your account, organizations, and documents"
+          description="Manage your account and stored briefs"
         />
         <SettingsLayout>{children}</SettingsLayout>
       </div>

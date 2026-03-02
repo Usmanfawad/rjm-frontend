@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
   Key,
   Users,
@@ -10,192 +9,20 @@ import {
   ChevronUp,
   Globe,
   MapPin,
-  X,
-  Lock,
-  Unlock,
-  ArrowUp,
-  ArrowDown,
-  Plus,
   Pencil,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { api } from '@/lib/api';
-import type { CampaignView, PersonaCanonEntry } from '@/types/api';
-
-interface EditablePersona {
-  name: string;
-  highlight?: string | null;
-  phylum?: string | null;
-  locked: boolean;
-}
+import type { CampaignView } from '@/types/api';
 
 interface PersonaFrameworkTabProps {
   campaign: CampaignView;
+  onSwitchToCustomize?: () => void;
 }
 
-export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
-  const router = useRouter();
+export function PersonaFrameworkTab({ campaign, onSwitchToCustomize }: PersonaFrameworkTabProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['personas']));
-  const [editMode, setEditMode] = useState(false);
-  const [editablePersonas, setEditablePersonas] = useState<EditablePersona[]>([]);
-  const [addPersonaInput, setAddPersonaInput] = useState('');
-  const [suggestions, setSuggestions] = useState<PersonaCanonEntry[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const pj = campaign.program_json;
-
-  const searchPersonas = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      const res = await api.searchPersonaCanon(
-        query,
-        campaign.program_json?.advertising_category || undefined,
-        20,
-      );
-      if (res.success && res.data?.personas) {
-        // Filter out personas already in the list
-        const existingNames = new Set(editablePersonas.map((p) => p.name.toLowerCase()));
-        setSuggestions(res.data.personas.filter((p) => !existingNames.has(p.name.toLowerCase())));
-      }
-    } catch {
-      // Silently fail
-    }
-  }, [campaign.program_json?.advertising_category, editablePersonas]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (addPersonaInput.trim()) {
-        searchPersonas(addPersonaInput.trim());
-      } else {
-        setSuggestions([]);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [addPersonaInput, searchPersonas]);
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const isLocked =
-    campaign.lifecycle_state === 'activated' ||
-    campaign.lifecycle_state === 'archived';
-
-  const enterEditMode = () => {
-    if (!pj?.personas) return;
-    setEditablePersonas(
-      pj.personas.map((p) => ({
-        name: p.name,
-        highlight: p.highlight,
-        phylum: p.phylum,
-        locked: false,
-      })),
-    );
-    setEditMode(true);
-  };
-
-  const removePersona = (index: number) => {
-    setEditablePersonas((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const toggleLock = (index: number) => {
-    setEditablePersonas((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, locked: !p.locked } : p)),
-    );
-  };
-
-  const movePersona = (index: number, direction: 'up' | 'down') => {
-    setEditablePersonas((prev) => {
-      const arr = [...prev];
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= arr.length) return arr;
-      [arr[index], arr[targetIndex]] = [arr[targetIndex], arr[index]];
-      return arr;
-    });
-  };
-
-  const addPersona = (personaName?: string) => {
-    const name = (personaName || addPersonaInput).trim();
-    if (!name) return;
-    if (editablePersonas.some((p) => p.name.toLowerCase() === name.toLowerCase())) return;
-    setEditablePersonas((prev) => [...prev, { name, highlight: null, phylum: null, locked: false }]);
-    setAddPersonaInput('');
-    setSuggestions([]);
-    setShowSuggestions(false);
-  };
-
-  const [applying, setApplying] = useState(false);
-
-  const applyChanges = async () => {
-    const currentNames = editablePersonas.map((p) => p.name);
-    const originalNames = pj?.personas?.map((p) => p.name) || [];
-    const added = currentNames.filter((n) => !originalNames.includes(n));
-
-    // If new personas were added, route to chat for full LLM regeneration
-    if (added.length > 0) {
-      const lockedNames = editablePersonas.filter((p) => p.locked).map((p) => p.name);
-      const removed = originalNames.filter((n) => !currentNames.includes(n));
-      let instruction = `Rebuild this campaign with the following persona changes:`;
-      if (removed.length > 0) instruction += ` Remove: ${removed.join(', ')}.`;
-      if (added.length > 0) instruction += ` Add: ${added.join(', ')}.`;
-      if (lockedNames.length > 0) instruction += ` Keep locked (must remain): ${lockedNames.join(', ')}.`;
-      instruction += ` Final portfolio should have ${currentNames.length} personas in this order: ${currentNames.join(', ')}.`;
-      instruction += ` Recalculate portfolio, insights, activation plan, and cultural overlays.`;
-      const encoded = encodeURIComponent(instruction);
-      router.push(`/chat?campaign_id=${campaign.id}&prefill=${encoded}`);
-      setEditMode(false);
-      return;
-    }
-
-    // For removals and reorders only, apply directly via PATCH
-    setApplying(true);
-    try {
-      const updatedPersonas = editablePersonas.map((ep) => {
-        const original = pj?.personas?.find((p) => p.name === ep.name);
-        return original || { name: ep.name, highlight: ep.highlight, phylum: ep.phylum };
-      });
-      const updatedJson = { ...pj, personas: updatedPersonas };
-      const res = await api.updatePersonaGeneration(campaign.id, {
-        program_json: updatedJson as import('@/types/api').ProgramJSON,
-      });
-      if (res.success) {
-        // Reload the page to reflect changes
-        window.location.reload();
-      }
-    } catch {
-      // Fallback: route to chat if PATCH fails
-      const removed = originalNames.filter((n) => !currentNames.includes(n));
-      let instruction = `Rebuild this campaign: Remove ${removed.join(', ')}. Keep ${currentNames.length} personas.`;
-      const encoded = encodeURIComponent(instruction);
-      router.push(`/chat?campaign_id=${campaign.id}&prefill=${encoded}`);
-    } finally {
-      setApplying(false);
-      setEditMode(false);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditMode(false);
-    setEditablePersonas([]);
-    setAddPersonaInput('');
-  };
 
   if (!pj) {
     return (
@@ -253,7 +80,7 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
         </Card>
       )}
 
-      {/* Persona Portfolio */}
+      {/* Persona Portfolio (read-only) */}
       <Card variant="elevated">
         <CardHeader
           className="cursor-pointer select-none"
@@ -262,17 +89,17 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Users className="h-5 w-5 text-[var(--primary)]" />
-              Persona Portfolio ({editMode ? editablePersonas.length : (pj.personas?.length ?? 0)})
+              Persona Portfolio ({pj.personas?.length ?? 0})
             </span>
             <span className="flex items-center gap-2">
-              {!editMode && !isLocked && pj.personas?.length > 0 && (
+              {onSwitchToCustomize && pj.personas?.length > 0 && campaign.lifecycle_state !== 'live' && campaign.lifecycle_state !== 'archived' && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    enterEditMode();
+                    onSwitchToCustomize();
                   }}
                   className="p-1 rounded hover:bg-[var(--border)] transition-colors"
-                  title="Edit personas"
+                  title="Customize personas"
                 >
                   <Pencil className="h-4 w-4 text-[var(--muted-foreground)]" />
                 </button>
@@ -287,152 +114,23 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
         </CardHeader>
         {expanded.has('personas') && (
           <CardContent>
-            {editMode ? (
-              /* Editable Persona Panel */
-              <div className="space-y-3">
-                {editablePersonas.map((p, index) => (
-                  <div
-                    key={`${p.name}-${index}`}
-                    className="flex items-center gap-2 p-3 rounded-lg bg-[var(--accent)]"
-                  >
-                    {/* Re-rank controls */}
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => movePersona(index, 'up')}
-                        disabled={index === 0}
-                        className="p-0.5 rounded hover:bg-[var(--border)] disabled:opacity-30 transition-colors"
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => movePersona(index, 'down')}
-                        disabled={index === editablePersonas.length - 1}
-                        className="p-0.5 rounded hover:bg-[var(--border)] disabled:opacity-30 transition-colors"
-                      >
-                        <ArrowDown className="h-3 w-3" />
-                      </button>
-                    </div>
-
-                    {/* Persona info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{p.name}</p>
-                      {p.highlight && (
-                        <p className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">
-                          {p.highlight}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Lock toggle */}
-                    <button
-                      onClick={() => toggleLock(index)}
-                      className="p-1.5 rounded hover:bg-[var(--border)] transition-colors"
-                      title={p.locked ? 'Unlock persona' : 'Lock persona'}
-                    >
-                      {p.locked ? (
-                        <Lock className="h-3.5 w-3.5 text-[var(--primary)]" />
-                      ) : (
-                        <Unlock className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
-                      )}
-                    </button>
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => removePersona(index)}
-                      disabled={p.locked}
-                      className="p-1.5 rounded hover:bg-red-500/10 disabled:opacity-30 transition-colors"
-                      title="Remove persona"
-                    >
-                      <X className="h-3.5 w-3.5 text-red-500" />
-                    </button>
-                  </div>
-                ))}
-
-                {/* Add persona input with autocomplete */}
-                <div className="relative pt-2 border-t border-[var(--border)]">
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={addPersonaInput}
-                      onChange={(e) => {
-                        setAddPersonaInput(e.target.value);
-                        setShowSuggestions(true);
-                      }}
-                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                      onKeyDown={(e) => e.key === 'Enter' && addPersona()}
-                      placeholder="Search persona canon..."
-                      className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                    />
-                    <button
-                      onClick={() => addPersona()}
-                      disabled={!addPersonaInput.trim()}
-                      className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div
-                      ref={suggestionsRef}
-                      className="absolute left-0 right-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-lg z-10"
-                    >
-                      {suggestions.map((s) => (
-                        <button
-                          key={`${s.name}-${s.category}`}
-                          onClick={() => addPersona(s.name)}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--accent)] transition-colors flex items-center justify-between"
-                        >
-                          <span className="font-medium">{s.name}</span>
-                          <span className="text-xs text-[var(--muted-foreground)]">{s.category}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={applyChanges}
-                    disabled={applying}
-                    className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
-                  >
-                    {applying ? 'Applying...' : 'Apply Changes'}
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="px-4 py-2 text-sm font-medium rounded-lg border border-[var(--border)] hover:bg-[var(--accent)] transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Read-only persona display */
-              <div className="grid gap-3">
-                {pj.personas?.map((p) => (
-                  <div
-                    key={p.name}
-                    className="flex items-start justify-between p-3 rounded-lg bg-[var(--accent)]"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{p.name}</p>
-                      {p.highlight && (
-                        <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                          {p.highlight}
-                        </p>
-                      )}
-                    </div>
-                    {p.phylum && (
-                      <Badge variant="default" className="ml-2 shrink-0">
-                        {p.phylum}
-                      </Badge>
+            <div className="grid gap-3">
+              {pj.personas?.map((p) => (
+                <div
+                  key={p.name}
+                  className="flex items-start justify-between p-3 rounded-lg bg-[var(--accent)]"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{p.name}</p>
+                    {p.highlight && (
+                      <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                        {p.highlight}
+                      </p>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </CardContent>
         )}
       </Card>
@@ -481,34 +179,46 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
       {/* Demographics */}
       {pj.demos && (pj.demos.core || pj.demos.secondary) && (
         <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-[var(--primary)]" />
-              Demographics
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => toggle('demographics')}
+          >
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-[var(--primary)]" />
+                Demographics
+              </span>
+              {expanded.has('demographics') ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {pj.demos.core && (
-                <div>
-                  <p className="text-xs text-[var(--muted-foreground)]">Core</p>
-                  <p className="text-sm font-medium">{pj.demos.core}</p>
-                </div>
-              )}
-              {pj.demos.secondary && (
-                <div>
-                  <p className="text-xs text-[var(--muted-foreground)]">Secondary</p>
-                  <p className="text-sm font-medium">{pj.demos.secondary}</p>
-                </div>
-              )}
-              {pj.demos.broad_demo && (
-                <div>
-                  <p className="text-xs text-[var(--muted-foreground)]">Broad</p>
-                  <p className="text-sm font-medium">{pj.demos.broad_demo}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
+          {expanded.has('demographics') && (
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {pj.demos.core && (
+                  <div>
+                    <p className="text-xs text-[var(--muted-foreground)]">Core</p>
+                    <p className="text-sm font-medium">{pj.demos.core}</p>
+                  </div>
+                )}
+                {pj.demos.secondary && (
+                  <div>
+                    <p className="text-xs text-[var(--muted-foreground)]">Secondary</p>
+                    <p className="text-sm font-medium">{pj.demos.secondary}</p>
+                  </div>
+                )}
+                {pj.demos.broad_demo && (
+                  <div>
+                    <p className="text-xs text-[var(--muted-foreground)]">Broad</p>
+                    <p className="text-sm font-medium">{pj.demos.broad_demo}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          )}
         </Card>
       )}
 
@@ -533,7 +243,7 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
         </Card>
       )}
 
-      {/* Cultural Modifiers (merged from Cultural tab) */}
+      {/* Cultural Modifiers */}
       {(hasMulticultural || hasLocal) && (
         <Card variant="elevated">
           <CardHeader
@@ -554,7 +264,6 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
           </CardHeader>
           {expanded.has('cultural') && (
             <CardContent className="space-y-4">
-              {/* Multicultural Expressions */}
               {pj.multicultural_expressions && pj.multicultural_expressions.length > 0 && (
                 <div>
                   <p className="text-xs text-[var(--muted-foreground)] mb-2">
@@ -569,8 +278,6 @@ export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
                   </div>
                 </div>
               )}
-
-              {/* Local Culture */}
               {hasLocal && (
                 <div>
                   <p className="text-xs text-[var(--muted-foreground)] mb-2">

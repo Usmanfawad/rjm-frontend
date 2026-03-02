@@ -10,8 +10,8 @@ interface CampaignLifecycleBadgeProps {
 }
 
 export function CampaignLifecycleBadge({ state, className }: CampaignLifecycleBadgeProps) {
-  const colors = LIFECYCLE_COLORS[state];
-  const label = LIFECYCLE_LABELS[state];
+  const colors = LIFECYCLE_COLORS[state] || LIFECYCLE_COLORS.proposal;
+  const label = LIFECYCLE_LABELS[state] || 'Unknown';
 
   return (
     <span

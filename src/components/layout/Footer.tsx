@@ -31,7 +31,7 @@ export function Footer() {
               <span className="text-[var(--primary)]">M</span>IRA
             </Link>
             <p className="mt-4 text-sm text-[var(--muted-foreground)] max-w-xs">
-              Cultural media reimagined. Empowering authentic voices through AI-powered intelligence.
+              Cultural Intelligence for Marketers
             </p>
           </div>
 

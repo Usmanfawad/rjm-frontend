@@ -15,7 +15,6 @@ export function RegisterForm() {
     password: '',
     confirmPassword: '',
     fullName: '',
-    username: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -47,17 +46,20 @@ export function RegisterForm() {
       return;
     }
 
-    const result = await register({
-      email: formData.email,
-      password: formData.password,
-      full_name: formData.fullName,
-    });
+    try {
+      const result = await register({
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.fullName,
+      });
 
-    if (result.success) {
-      // Redirect to dashboard since user is now logged in
-      router.push('/dashboard');
-    } else {
-      setError(result.error || 'Registration failed');
+      if (result?.success) {
+        router.push('/workspace');
+      } else {
+        setError(result?.error || 'Registration failed');
+      }
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -91,19 +93,6 @@ export function RegisterForm() {
               onChange={handleChange}
               className="pl-10"
               autoComplete="name"
-            />
-          </div>
-
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--muted-foreground)] pointer-events-none" />
-            <Input
-              type="text"
-              name="username"
-              placeholder="Username (optional)"
-              value={formData.username}
-              onChange={handleChange}
-              className="pl-10"
-              autoComplete="username"
             />
           </div>
 

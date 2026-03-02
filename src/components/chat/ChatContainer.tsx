@@ -61,8 +61,11 @@ export const ChatContainer = forwardRef<ChatContainerRef, ChatContainerProps>(
           setSessionId(session.id);
           setState(session.current_state);
         }
-      } catch (error) {
-        console.error('Failed to load session:', error);
+      } catch {
+        setMessages([{
+          role: 'assistant',
+          content: 'Failed to load this conversation. Please try again or start a new chat.',
+        }]);
       } finally {
         setIsLoadingSession(false);
       }
@@ -146,13 +149,34 @@ export const ChatContainer = forwardRef<ChatContainerRef, ChatContainerProps>(
                 <Bot className="h-8 w-8 text-[var(--background)]" />
               </div>
               <h2 className="text-xl font-semibold mb-2">
-                {campaignContext ? `Refining: ${campaignContext.brand_name}` : 'Strategic Conversation'}
+                {campaignContext ? `Refining: ${campaignContext.brand_name}` : 'MIRA Strategic Concierge'}
               </h2>
-              <p className="text-[var(--muted-foreground)] max-w-md">
+              <p className="text-[var(--muted-foreground)] max-w-md mb-4">
                 {campaignContext
                   ? `Campaign context for ${campaignContext.brand_name} is loaded. Ask me to refine personas, adjust the cultural layer, or regenerate the framework.`
-                  : 'Ask about a brand, audience, campaign, or activation strategy.'}
+                  : 'Explore a brand, audience, campaign, or activation strategy.'}
               </p>
+              {!campaignContext && (
+                <div className="space-y-2">
+                  <p className="text-xs text-[var(--muted-foreground)]">Start with one of these:</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {[
+                      'Build a new campaign',
+                      'Refine an existing campaign',
+                      'Explore audience strategy',
+                      'Develop activation direction',
+                    ].map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => handleSend(prompt)}
+                        className="px-3 py-1.5 text-sm rounded-full border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             messages.map((msg, index) => (
@@ -185,7 +209,6 @@ export const ChatContainer = forwardRef<ChatContainerRef, ChatContainerProps>(
           <ChatInput
             onSend={handleSend}
             isLoading={isLoading}
-            placeholder="Tell me about your brand and campaign..."
           />
         </div>
       </div>

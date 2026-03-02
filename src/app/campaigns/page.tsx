@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { PageLayout, LoadingSpinner, EmptyState } from '@/components/layout';
 import { useAuthGuard, useApiQuery } from '@/hooks';
 import { api } from '@/lib/api';
@@ -10,22 +10,21 @@ import { ROUTES } from '@/constants';
 import { CampaignCard } from '@/components/campaigns';
 import { toCampaignView } from '@/lib/campaign-utils';
 import { cn } from '@/lib/utils';
-import type { CampaignLifecycleState, CampaignView } from '@/types/api';
+import type { CampaignView } from '@/types/api';
 
-const FILTER_TABS: { key: CampaignLifecycleState | 'all'; label: string }[] = [
+type FilterKey = 'all' | 'proposals' | 'live' | 'archived';
+
+const FILTER_TABS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'ideation', label: 'Ideation' },
-  { key: 'draft', label: 'Draft' },
-  { key: 'review', label: 'Review' },
-  { key: 'finalized', label: 'Finalized' },
-  { key: 'activated', label: 'Activated' },
+  { key: 'proposals', label: 'Proposals' },
+  { key: 'live', label: 'Live' },
   { key: 'archived', label: 'Archived' },
 ];
 
 export default function CampaignsPage() {
   const router = useRouter();
   const { isReady } = useAuthGuard();
-  const [activeFilter, setActiveFilter] = useState<CampaignLifecycleState | 'all'>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
   const { data: generations, loading: genLoading, error } = useApiQuery(
     () => api.getPersonaGenerations(100, 0),
@@ -53,7 +52,13 @@ export default function CampaignsPage() {
 
   const filtered = useMemo(() => {
     if (activeFilter === 'all') return campaigns;
-    return campaigns.filter((c) => c.lifecycle_state === activeFilter);
+    if (activeFilter === 'proposals')
+      return campaigns.filter((c) => c.lifecycle_state === 'proposal' || c.lifecycle_state === 'activation_requested');
+    if (activeFilter === 'live')
+      return campaigns.filter((c) => c.lifecycle_state === 'live');
+    if (activeFilter === 'archived')
+      return campaigns.filter((c) => c.lifecycle_state === 'archived');
+    return campaigns;
   }, [campaigns, activeFilter]);
 
   if (!isReady) {
@@ -68,14 +73,13 @@ export default function CampaignsPage() {
           <div>
             <h1 className="text-2xl font-bold">Campaigns</h1>
             <p className="text-sm text-[var(--muted-foreground)] mt-1">
-              Build, refine, and activate persona-driven campaigns.
+              Structure, manage, and deploy persona-driven programs.
             </p>
           </div>
           <button
             onClick={() => router.push(ROUTES.CAMPAIGNS_NEW)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] text-sm font-medium hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            <Plus className="h-4 w-4" />
             Build Campaign
           </button>
         </div>
@@ -106,8 +110,8 @@ export default function CampaignsPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Sparkles}
-            title="No campaigns yet"
-            description="Create your first persona program to get started."
+            title="No campaign proposals yet."
+            description="Build your first persona program to get started."
             action={{
               label: 'Build Campaign',
               onClick: () => router.push(ROUTES.CAMPAIGNS_NEW),

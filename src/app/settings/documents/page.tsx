@@ -8,7 +8,6 @@ import { Button, ConfirmationDialog } from '@/components/ui';
 import { useAuthGuard, useApiQuery, useApiMutation } from '@/hooks';
 import { api } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { FileText, Upload, Search, Trash2 } from 'lucide-react';
 import { ROUTES } from '@/constants';
 
@@ -42,7 +41,7 @@ export default function SettingsDocumentsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold">Documents</h2>
+        <h2 className="text-lg font-semibold">Brief Library</h2>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => router.push(ROUTES.SETTINGS_DOCUMENTS_SEARCH)}>
             <Search className="h-4 w-4 mr-1" />
@@ -50,7 +49,7 @@ export default function SettingsDocumentsPage() {
           </Button>
           <Button size="sm" onClick={() => setShowUpload(!showUpload)}>
             <Upload className="h-4 w-4 mr-1" />
-            Upload
+            Upload Brief
           </Button>
         </div>
       </div>
@@ -69,10 +68,10 @@ export default function SettingsDocumentsPage() {
       {docs.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No documents yet"
-          description="Upload brand documents to enhance persona program generation with RAG context."
+          title="No briefs uploaded yet."
+          description="Upload campaign briefs to inform persona framework generation."
           action={{
-            label: 'Upload Document',
+            label: 'Upload Brief',
             onClick: () => setShowUpload(true),
           }}
         />
@@ -86,22 +85,11 @@ export default function SettingsDocumentsPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{doc.title}</p>
                     <p className="text-xs text-[var(--muted-foreground)]">
-                      {doc.chunk_count} chunks
+                      {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : ''}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      doc.status === 'completed'
-                        ? 'success'
-                        : doc.status === 'failed'
-                          ? 'danger'
-                          : 'warning'
-                    }
-                  >
-                    {doc.status}
-                  </Badge>
                   <button
                     onClick={() => setDeleteId(doc.id)}
                     className="p-1 hover:bg-[var(--accent)] rounded transition-colors"
