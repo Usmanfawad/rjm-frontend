@@ -3,63 +3,77 @@
 import { useState } from 'react';
 import {
   Send,
-  Copy,
-  Check,
-  ArrowRight,
-  Shield,
   Download,
-  FileText,
+  Radio,
+  Shield,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { CampaignLifecycleBadge } from './CampaignLifecycleBadge';
+import { useToast } from '@/hooks/useToast';
 import type { CampaignView } from '@/types/api';
 
 interface ActionControlsTabProps {
   campaign: CampaignView;
-  onRegister?: () => Promise<void>;
+  onActivate?: () => Promise<void>;
   onTransition?: (toState: string) => Promise<void>;
-  onExport?: () => void;
 }
 
 export function ActionControlsTab({
   campaign,
-  onRegister,
+  onActivate,
   onTransition,
-  onExport,
 }: ActionControlsTabProps) {
-  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   const [transitioning, setTransitioning] = useState(false);
+  const [executionPath, setExecutionPath] = useState<'managed' | 'programmatic' | null>(null);
   const state = campaign.lifecycle_state;
-  const isGoverned = !!campaign.governance_id;
 
-  const handleRegister = async () => {
-    if (!onRegister || transitioning) return;
+  const handleActivate = async () => {
+    if (transitioning) return;
     setTransitioning(true);
     try {
-      await onRegister();
+      if (onActivate) {
+        await onActivate();
+      }
     } finally {
       setTransitioning(false);
     }
   };
 
-  const handleTransition = async (toState: string) => {
-    if (!onTransition || transitioning) return;
-    setTransitioning(true);
-    try {
-      await onTransition(toState);
-    } finally {
-      setTransitioning(false);
+  const handleExportFramework = () => {
+    const text = campaign.program_text;
+    if (!text) {
+      toast('No framework data to export.', 'error');
+      return;
     }
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${campaign.brand_name}-framework.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleCopyText = async () => {
-    try {
-      await navigator.clipboard.writeText(campaign.program_text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API failed silently
+  const handleExportActivation = () => {
+    const pj = campaign.program_json;
+    if (!pj?.activation_summary) {
+      toast('No activation summary available to export.', 'error');
+      return;
     }
+    const summary = pj.activation_summary;
+    let text = 'ACTIVATION SUMMARY\n\n';
+    if (summary.primary_channels) text += `Primary Channels: ${Array.isArray(summary.primary_channels) ? summary.primary_channels.join(', ') : summary.primary_channels}\n`;
+    if (summary.supporting_channels) text += `Supporting Channels: ${Array.isArray(summary.supporting_channels) ? summary.supporting_channels.join(', ') : summary.supporting_channels}\n`;
+    if (summary.channel_weighting) text += `Channel Weighting: ${typeof summary.channel_weighting === 'object' ? JSON.stringify(summary.channel_weighting) : summary.channel_weighting}\n`;
+    if (summary.flighting_approach) text += `Flighting Approach: ${summary.flighting_approach}\n`;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${campaign.brand_name}-activation-summary.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -67,179 +81,149 @@ export function ActionControlsTab({
       {/* Header */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>Launch Persona Campaign</CardTitle>
+          <CardTitle>Launch Campaign</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-[var(--muted-foreground)] mb-4">
-            Move from strategy to live execution.
-          </p>
           <div className="flex items-center gap-3">
             <CampaignLifecycleBadge state={state} />
-            {campaign.governance_id && (
-              <span className="text-xs text-[var(--muted-foreground)]">
-                Governed
-              </span>
-            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Full Program Write-Up */}
-      {campaign.program_text && (
+      {/* Status-dependent content */}
+      {state === 'proposal' && (
+        <>
+          {/* Execution Path */}
+          <Card variant="elevated">
+            <CardHeader>
+              <CardTitle>Execution Path</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setExecutionPath('managed')}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                    executionPath === 'managed'
+                      ? 'border-[var(--primary)] bg-[var(--primary)]/5'
+                      : 'border-[var(--border)] hover:border-[var(--foreground)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-5 w-5 text-[var(--primary)]" />
+                    <div>
+                      <p className="text-sm font-medium">Managed Execution (IO)</p>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Run this campaign directly through Real Juice Media.
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setExecutionPath('programmatic')}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                    executionPath === 'programmatic'
+                      ? 'border-[var(--primary)] bg-[var(--primary)]/5'
+                      : 'border-[var(--border)] hover:border-[var(--foreground)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Radio className="h-5 w-5 text-[var(--primary)]" />
+                    <div>
+                      <p className="text-sm font-medium">Programmatic Deal ID</p>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Receive a PMP Deal ID for activation in your DSP.
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Activate Button */}
+          <button
+            onClick={handleActivate}
+            disabled={transitioning || !executionPath}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {transitioning ? (
+              'Submitting...'
+            ) : (
+              <>
+                <Send className="h-5 w-5" />
+                Activate Campaign
+              </>
+            )}
+          </button>
+        </>
+      )}
+
+      {state === 'activation_requested' && (
         <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-[var(--primary)]" />
-                Persona Program Write-Up
-              </span>
-              <button
-                onClick={handleCopyText}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] hover:bg-[var(--accent)] transition-colors"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-green-500" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5" />
-                    Copy
-                  </>
-                )}
-              </button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-sm text-[var(--muted-foreground)] whitespace-pre-wrap font-sans leading-relaxed">
-              {campaign.program_text}
-            </pre>
+          <CardContent className="py-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Activation Requested</h3>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Your campaign has been submitted for activation.
+            </p>
+            <p className="text-sm text-[var(--muted-foreground)] mt-1">
+              A Deal ID or IO confirmation will be issued within 24 hours.
+            </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Actions */}
+      {state === 'live' && (
+        <Card variant="elevated">
+          <CardContent className="py-8 text-center">
+            <h3 className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+              Campaign is Live
+            </h3>
+          </CardContent>
+        </Card>
+      )}
+
+      {state === 'archived' && (
+        <Card variant="elevated">
+          <CardContent className="py-8 text-center">
+            <h3 className="text-lg font-semibold text-[var(--muted-foreground)]">
+              Campaign Archived
+            </h3>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Export Buttons */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>Actions</CardTitle>
+          <CardTitle>Export</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* Submit for Activation */}
-            {!isGoverned && (
-              <button
-                onClick={handleRegister}
-                disabled={transitioning}
-                className="w-full flex items-center justify-between p-4 rounded-lg border-2 border-dashed border-[var(--primary)]/40 hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-colors disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-[var(--primary)]" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Submit for Activation</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      Register and begin the activation lifecycle
-                    </p>
-                  </div>
-                </span>
-                <ArrowRight className="h-4 w-4 text-[var(--muted-foreground)]" />
-              </button>
-            )}
-
-            {/* Progress through lifecycle if governed */}
-            {isGoverned && (state === 'ideation' || state === 'draft') && (
-              <button
-                onClick={() => handleTransition('approved')}
-                disabled={transitioning}
-                className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-green-400 hover:bg-green-500/5 transition-colors disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <Send className="h-5 w-5 text-green-500" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Submit for Activation</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      Move to approval workflow
-                    </p>
-                  </div>
-                </span>
-                <ArrowRight className="h-4 w-4 text-[var(--muted-foreground)]" />
-              </button>
-            )}
-
-            {state === 'review' && (
-              <button
-                onClick={() => handleTransition('requested_for_activation')}
-                disabled={transitioning}
-                className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-green-400 hover:bg-green-500/5 transition-colors disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <Send className="h-5 w-5 text-green-500" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Finalize</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      Approve and prepare for activation
-                    </p>
-                  </div>
-                </span>
-                <ArrowRight className="h-4 w-4 text-[var(--muted-foreground)]" />
-              </button>
-            )}
-
-            {state === 'finalized' && (
-              <button
-                onClick={() => handleTransition('in_progress')}
-                disabled={transitioning}
-                className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-emerald-400 hover:bg-emerald-500/5 transition-colors disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <Send className="h-5 w-5 text-emerald-500" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Send to Activation</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      Begin campaign activation
-                    </p>
-                  </div>
-                </span>
-                <ArrowRight className="h-4 w-4 text-[var(--muted-foreground)]" />
-              </button>
-            )}
-
-            {/* Export Persona Framework */}
             <button
-              onClick={handleCopyText}
-              className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+              onClick={handleExportFramework}
+              className="w-full flex items-center gap-3 p-4 rounded-lg border border-[var(--border)] hover:border-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
             >
-              <span className="flex items-center gap-3">
-                {copied ? (
-                  <Check className="h-5 w-5 text-green-500" />
-                ) : (
-                  <Download className="h-5 w-5 text-[var(--muted-foreground)]" />
-                )}
-                <div className="text-left">
-                  <p className="text-sm font-medium">
-                    {copied ? 'Copied' : 'Export Persona Framework'}
-                  </p>
-                  <p className="text-xs text-[var(--muted-foreground)]">
-                    Copy full program text to clipboard
-                  </p>
-                </div>
-              </span>
+              <Download className="h-5 w-5 text-[var(--muted-foreground)]" />
+              <div className="text-left">
+                <p className="text-sm font-medium">Export Framework</p>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Download full persona framework as text
+                </p>
+              </div>
             </button>
 
-            {/* Duplicate Campaign */}
             <button
-              onClick={onExport}
-              className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border)] hover:border-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+              onClick={handleExportActivation}
+              className="w-full flex items-center gap-3 p-4 rounded-lg border border-[var(--border)] hover:border-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
             >
-              <span className="flex items-center gap-3">
-                <Copy className="h-5 w-5 text-[var(--muted-foreground)]" />
-                <div className="text-left">
-                  <p className="text-sm font-medium">Duplicate Campaign</p>
-                  <p className="text-xs text-[var(--muted-foreground)]">
-                    Copy as new campaign
-                  </p>
-                </div>
-              </span>
+              <Download className="h-5 w-5 text-[var(--muted-foreground)]" />
+              <div className="text-left">
+                <p className="text-sm font-medium">Export Activation Summary</p>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Download activation summary as text
+                </p>
+              </div>
             </button>
           </div>
         </CardContent>

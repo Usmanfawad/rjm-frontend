@@ -775,6 +775,27 @@ class ApiClient {
     });
   }
 
+  async rebuildGeneration(
+    generationId: string,
+    params: {
+      constraints?: string;
+      persona_count?: number;
+      requested_personas?: string[];
+      locked_personas?: string[];
+      removed_personas?: string[];
+      apply_multicultural_overlay?: boolean;
+      multicultural_lineages?: string[];
+      apply_local_overlay?: boolean;
+      local_dmas?: string[];
+      apply_generational_overlay?: boolean;
+    }
+  ): Promise<ApiResponse<PersonaGeneration>> {
+    return this.request<PersonaGeneration>(`/v1/rjm/generations/${generationId}/rebuild`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
   async searchPersonaCanon(
     query?: string,
     category?: string,

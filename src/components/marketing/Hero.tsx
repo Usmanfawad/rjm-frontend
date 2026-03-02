@@ -50,12 +50,12 @@ export function Hero() {
           <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight mb-8 animate-fade-in">
             Cultural Intelligence for
             <br />
-            <span className="text-[var(--primary)]">Modern Marketers</span>
+            <span className="text-[var(--primary)]">Marketers</span>
           </h1>
 
           {/* Subheading */}
           <p className="text-xl sm:text-2xl text-[var(--muted-foreground)] mb-12 max-w-2xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Build persona-driven campaigns rooted in culture, identity, and real consumer behavior — then activate them instantly.
+            Persona-driven campaigns rooted in culture and identity. Activated instantly.
           </p>
 
           {/* CTA Buttons */}

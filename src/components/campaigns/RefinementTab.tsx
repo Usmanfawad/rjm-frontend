@@ -35,7 +35,7 @@ export function RefinementTab({
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const isLocked =
-    campaign.lifecycle_state === 'activated' ||
+    campaign.lifecycle_state === 'live' ||
     campaign.lifecycle_state === 'archived';
 
   const handleRefineInChat = (instruction: string) => {

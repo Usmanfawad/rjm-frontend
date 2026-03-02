@@ -3,13 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { User, Building2, FileText } from 'lucide-react';
+import { User, FileText } from 'lucide-react';
 import { ROUTES } from '@/constants';
 
 const SETTINGS_TABS = [
   { href: ROUTES.SETTINGS_ACCOUNT, label: 'Account', icon: User },
-  { href: ROUTES.SETTINGS_ORGANIZATIONS, label: 'Organizations', icon: Building2 },
-  { href: ROUTES.SETTINGS_DOCUMENTS, label: 'Documents', icon: FileText },
+  { href: ROUTES.SETTINGS_DOCUMENTS, label: 'Brief Library', icon: FileText },
 ];
 
 interface SettingsLayoutProps {

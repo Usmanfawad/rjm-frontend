@@ -1,5 +1,5 @@
 import { Navbar, Footer } from '@/components/layout';
-import { Hero, Features, CTA } from '@/components/marketing';
+import { Hero, Features } from '@/components/marketing';
 
 export default function HomePage() {
   return (
@@ -8,7 +8,6 @@ export default function HomePage() {
       <main className="flex-1">
         <Hero />
         <Features />
-        <CTA />
       </main>
       <Footer />
     </div>

@@ -4,39 +4,37 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { CampaignOverviewTab } from './CampaignOverviewTab';
 import { PersonaFrameworkTab } from './PersonaFrameworkTab';
-import { RefinementTab } from './RefinementTab';
+import { CustomizeTab } from './CustomizeTab';
 import { ActionControlsTab } from './ActionControlsTab';
 import type { CampaignView } from '@/types/api';
 
-type TabKey = 'overview' | 'personas' | 'refinement' | 'activation';
+type TabKey = 'overview' | 'framework' | 'customize' | 'activation';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'personas', label: 'Persona Framework' },
-  { key: 'refinement', label: 'Refinement' },
+  { key: 'framework', label: 'Framework' },
+  { key: 'customize', label: 'Customize' },
   { key: 'activation', label: 'Activation' },
 ];
 
 interface CampaignDetailProps {
   campaign: CampaignView;
-  onRegister?: () => Promise<void>;
+  onActivate?: () => Promise<void>;
   onTransition?: (toState: string) => Promise<void>;
-  onRegenerate?: () => Promise<void>;
-  onDuplicate?: () => Promise<void>;
-  onSaveDraft?: () => Promise<void>;
-  onExport?: () => void;
 }
 
 export function CampaignDetail({
   campaign,
-  onRegister,
+  onActivate,
   onTransition,
-  onRegenerate,
-  onDuplicate,
-  onSaveDraft,
-  onExport,
 }: CampaignDetailProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [scrollToEditing, setScrollToEditing] = useState(false);
+
+  const handleSwitchToCustomize = () => {
+    setScrollToEditing(true);
+    setActiveTab('customize');
+  };
 
   return (
     <div className="space-y-6">
@@ -55,7 +53,10 @@ export function CampaignDetail({
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              setScrollToEditing(false);
+              setActiveTab(tab.key);
+            }}
             className={cn(
               'px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
               'border-b-2 -mb-px',
@@ -72,21 +73,20 @@ export function CampaignDetail({
       {/* Tab Content */}
       <div>
         {activeTab === 'overview' && <CampaignOverviewTab campaign={campaign} />}
-        {activeTab === 'personas' && <PersonaFrameworkTab campaign={campaign} />}
-        {activeTab === 'refinement' && (
-          <RefinementTab
+        {activeTab === 'framework' && (
+          <PersonaFrameworkTab
             campaign={campaign}
-            onRegenerate={onRegenerate}
-            onDuplicate={onDuplicate}
-            onSaveDraft={onSaveDraft}
+            onSwitchToCustomize={handleSwitchToCustomize}
           />
+        )}
+        {activeTab === 'customize' && (
+          <CustomizeTab campaign={campaign} scrollToEditing={scrollToEditing} />
         )}
         {activeTab === 'activation' && (
           <ActionControlsTab
             campaign={campaign}
-            onRegister={onRegister}
+            onActivate={onActivate}
             onTransition={onTransition}
-            onExport={onExport}
           />
         )}
       </div>

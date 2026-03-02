@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -9,10 +9,9 @@ import { LoadingSpinner } from '@/components/layout';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Modal } from '@/components/ui';
 import { useAuthGuard } from '@/hooks';
 import { ROUTES, SUCCESS_MESSAGES } from '@/constants';
-import { Sun, Moon, Bell, Shield, Trash2, Lock, Eye, EyeOff, BarChart3 } from 'lucide-react';
+import { Sun, Moon, Shield, Trash2, Lock, Eye, EyeOff, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
-import type { UsageStatsResponse } from '@/types/api';
 
 export default function AccountSettingsPage() {
   const { logout } = useAuth();
@@ -34,28 +33,6 @@ export default function AccountSettingsPage() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-
-  const [usageStats, setUsageStats] = useState<UsageStatsResponse | null>(null);
-  const [usagePeriod, setUsagePeriod] = useState<string>('today');
-  const [usageLoading, setUsageLoading] = useState(false);
-
-  const fetchUsageStats = useCallback(async (period: string) => {
-    setUsageLoading(true);
-    try {
-      const response = await api.getUsageStats(period);
-      if (response.success && response.data) {
-        setUsageStats(response.data);
-      }
-    } catch {
-      // Silently fail
-    } finally {
-      setUsageLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isReady) fetchUsageStats(usagePeriod);
-  }, [isReady, usagePeriod, fetchUsageStats]);
 
   if (!isReady) {
     return <LoadingSpinner message="Loading account settings..." />;
@@ -208,6 +185,16 @@ export default function AccountSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Sign Out */}
+      <Card variant="elevated" className="mb-6">
+        <CardContent className="py-4">
+          <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Danger Zone */}
       <Card variant="bordered" className="border-[var(--error)]/30">
         <CardHeader>
@@ -220,14 +207,9 @@ export default function AccountSettingsPage() {
           <p className="text-sm text-[var(--muted-foreground)] mb-4">
             Once you delete your account, there is no going back.
           </p>
-          <div className="flex gap-3">
-            <Button variant="danger" onClick={() => setShowDeleteAccount(true)}>
-              Delete Account
-            </Button>
-            <Button variant="outline" onClick={handleLogout}>
-              Sign Out
-            </Button>
-          </div>
+          <Button variant="danger" onClick={() => setShowDeleteAccount(true)}>
+            Delete Account
+          </Button>
         </CardContent>
       </Card>
 
@@ -361,7 +343,7 @@ export default function AccountSettingsPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="danger" isLoading={deleteLoading}>
+            <Button type="submit" variant="danger" isLoading={deleteLoading} disabled={!deletePassword.trim()}>
               {deleteLoading ? 'Deleting...' : 'Delete My Account'}
             </Button>
           </div>

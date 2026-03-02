@@ -84,6 +84,7 @@ export function ChatInput({ onSend, isLoading, placeholder = 'Describe a brand, 
         {/* Text input */}
         <textarea
           ref={textareaRef}
+          data-chat-input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}

@@ -19,7 +19,6 @@ export function Navbar() {
         { href: '/workspace', label: 'Workspace' },
         { href: '/campaigns', label: 'Campaigns' },
         { href: '/chat', label: 'Chat' },
-        { href: '/activation', label: 'Activation' },
         { href: '/settings', label: 'Settings' },
       ]
     : [
@@ -126,7 +125,7 @@ export function Navbar() {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="sm">Get Started</Button>
+                  <Button size="sm">Enter Persona Engine</Button>
                 </Link>
               </div>
             )}
@@ -168,7 +167,7 @@ export function Navbar() {
                     </Button>
                   </Link>
                   <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full">Get Started</Button>
+                    <Button className="w-full">Enter Persona Engine</Button>
                   </Link>
                 </div>
               )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { ErrorMessage } from '@/components/errors';
 import { api } from '@/lib/api';
 import type { Document } from '@/types/api';
@@ -55,7 +55,7 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">Include Documents (Optional)</label>
+        <label className="text-sm font-medium">Attach Brief (Optional)</label>
         {selectedIds.length > 0 && (
           <Button
             variant="ghost"
@@ -79,10 +79,11 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
         <p className="text-sm text-[var(--muted-foreground)]">Loading documents...</p>
       ) : documents.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          No completed documents available. Upload documents first.
+          No briefs uploaded yet.
         </p>
       ) : (
         <div className="space-y-2 max-h-48 overflow-y-auto border border-[var(--border)] rounded-lg p-3">
+          <p className="text-xs text-[var(--muted-foreground)] mb-1">Select a brief to apply to this campaign.</p>
           {documents.map((doc) => {
             const isSelected = selectedIds.includes(doc.id);
             return (
@@ -96,16 +97,20 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
                     : 'border-[var(--border)] hover:bg-[var(--accent)]'
                 }`}
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <FileText className="h-4 w-4 text-[var(--muted-foreground)] flex-shrink-0" />
-                  <span className="text-sm font-medium truncate">{doc.title}</span>
-                  {isSelected && (
-                    <CheckCircle className="h-4 w-4 text-[var(--primary)] flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-[var(--muted-foreground)] flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">{doc.title}</span>
+                    {isSelected && (
+                      <CheckCircle className="h-4 w-4 text-[var(--primary)] flex-shrink-0" />
+                    )}
+                  </div>
+                  {isSelected && doc.summary && (
+                    <p className="text-xs text-[var(--muted-foreground)] mt-1 ml-6 line-clamp-2 text-left">
+                      {doc.summary}
+                    </p>
                   )}
                 </div>
-                <Badge variant="default" className="text-xs ml-2 flex-shrink-0">
-                  {doc.chunk_count} chunks
-                </Badge>
               </button>
             );
           })}
@@ -114,13 +119,12 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
 
       {selectedDocs.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs text-[var(--muted-foreground)] mb-2">Selected documents:</p>
+          <p className="text-xs text-[var(--muted-foreground)] mb-2">Selected briefs:</p>
           <div className="flex flex-wrap gap-2">
             {selectedDocs.map((doc) => (
-              <Badge
+              <span
                 key={doc.id}
-                variant="default"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-[var(--accent)] border border-[var(--border)]"
               >
                 {doc.title}
                 <button
@@ -130,7 +134,7 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
                 >
                   <X className="h-3 w-3" />
                 </button>
-              </Badge>
+              </span>
             ))}
           </div>
         </div>

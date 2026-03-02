@@ -27,8 +27,8 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
     e.preventDefault();
     setError('');
 
-    if (!brandName.trim() || !brief.trim()) {
-      setError('Please provide both brand name and brief to build your program.');
+    if (!brandName.trim()) {
+      setError('Please provide a brand name to build your program.');
       return;
     }
 
@@ -40,7 +40,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
 
       const response = await api.generateProgram({
         brand_name: brandName.trim(),
-        brief: brief.trim(),
+        brief: brief.trim() || brandName.trim(),
         document_ids: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
         multicultural_lineages: lineages.length > 0 ? lineages : undefined,
         local_dmas: dmas.length > 0 ? dmas : undefined,
@@ -78,12 +78,12 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
 
           <Textarea
             label="Campaign Objective (Optional)"
-            placeholder="Describe what you're launching, promoting, or trying to achieve."
+            placeholder="Describe what you're launching or trying to achieve."
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
             rows={6}
-            error={!brief && error ? 'Objective is required' : undefined}
-            helperText="Describe what you're launching, promoting, or trying to achieve."
+            error={undefined}
+            helperText="Describe what you're launching or trying to achieve."
           />
 
           <DocumentSelector
@@ -98,7 +98,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
             className="flex items-center gap-1 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
           >
             {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            Attach Brief (Optional)
+            Advanced Options
           </button>
 
           {showAdvanced && (
@@ -121,7 +121,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
             </div>
           )}
 
-          {error && !(!brandName || !brief) && (
+          {error && !!brandName && (
             <ErrorMessage
               error={error}
               context="GeneratorForm"
