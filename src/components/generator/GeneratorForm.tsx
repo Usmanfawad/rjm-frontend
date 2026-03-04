@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button, Input, Textarea, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { DocumentSelector } from '@/components/documents';
 import { ErrorMessage } from '@/components/errors';
 import { api } from '@/lib/api';
-import type { GenerateProgramResponse } from '@/types/api';
+import type { Document, GenerateProgramResponse } from '@/types/api';
 import { Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface GeneratorFormProps {
@@ -22,6 +22,16 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const userEditedBrief = useRef(false);
+
+  const handleDocumentsChange = (docs: Document[]) => {
+    if (userEditedBrief.current) return;
+    const summaries = docs
+      .map(doc => doc.summary)
+      .filter(Boolean)
+      .join('\n\n');
+    setBrief(summaries);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +90,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
             label="Campaign Objective (Optional)"
             placeholder="Describe what you're launching or trying to achieve."
             value={brief}
-            onChange={(e) => setBrief(e.target.value)}
+            onChange={(e) => { userEditedBrief.current = true; setBrief(e.target.value); }}
             rows={6}
             error={undefined}
             helperText="Describe what you're launching or trying to achieve."
@@ -89,6 +99,7 @@ export function GeneratorForm({ onGenerate, orgId }: GeneratorFormProps) {
           <DocumentSelector
             selectedIds={selectedDocumentIds}
             onSelectionChange={setSelectedDocumentIds}
+            onDocumentsChange={handleDocumentsChange}
             orgId={orgId}
           />
 
