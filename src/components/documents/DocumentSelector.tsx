@@ -10,10 +10,11 @@ import { FileText, X, CheckCircle } from 'lucide-react';
 interface DocumentSelectorProps {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  onDocumentsChange?: (docs: Document[]) => void;
   orgId?: string;
 }
 
-export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: DocumentSelectorProps) {
+export function DocumentSelector({ selectedIds, onSelectionChange, onDocumentsChange, orgId }: DocumentSelectorProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -43,10 +44,15 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
   };
 
   const toggleDocument = (docId: string) => {
+    let newIds: string[];
     if (selectedIds.includes(docId)) {
-      onSelectionChange(selectedIds.filter(id => id !== docId));
+      newIds = selectedIds.filter(id => id !== docId);
     } else {
-      onSelectionChange([...selectedIds, docId]);
+      newIds = [...selectedIds, docId];
+    }
+    onSelectionChange(newIds);
+    if (onDocumentsChange) {
+      onDocumentsChange(documents.filter(doc => newIds.includes(doc.id)));
     }
   };
 
@@ -60,7 +66,7 @@ export function DocumentSelector({ selectedIds, onSelectionChange, orgId }: Docu
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onSelectionChange([])}
+            onClick={() => { onSelectionChange([]); onDocumentsChange?.([]); }}
           >
             Clear ({selectedIds.length})
           </Button>
