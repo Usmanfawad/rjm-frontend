@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui';
 import { ErrorMessage } from '@/components/errors';
 import { api } from '@/lib/api';
 import type { Document } from '@/types/api';
-import { FileText, X, CheckCircle } from 'lucide-react';
+import { FileText, X, CheckCircle, Upload, Loader2 } from 'lucide-react';
 
 interface DocumentSelectorProps {
   selectedIds: string[];
@@ -14,10 +14,15 @@ interface DocumentSelectorProps {
   orgId?: string;
 }
 
+const ACCEPTED_TYPES = '.pdf,.docx,.doc,.txt,.md';
+
 export function DocumentSelector({ selectedIds, onSelectionChange, onDocumentsChange, orgId }: DocumentSelectorProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadDocuments();
@@ -28,11 +33,17 @@ export function DocumentSelector({ selectedIds, onSelectionChange, onDocumentsCh
       setLoading(true);
       const response = await api.listDocuments({
         org_id: orgId,
-        status: 'completed', // Only show completed documents
+        status: 'completed',
         limit: 100,
       });
       if (response.success && response.data) {
-        setDocuments(response.data.documents);
+        // Filter out system artifacts — only show user-uploaded briefs
+        const SYSTEM_ARTIFACTS = ['automated-treatment-plan-generation'];
+        const userDocs = response.data.documents.filter(
+          (doc) => !SYSTEM_ARTIFACTS.includes(doc.title?.toLowerCase().replace(/\s+/g, '-') || '')
+            && !SYSTEM_ARTIFACTS.includes(doc.title || '')
+        );
+        setDocuments(userDocs);
       } else {
         setError(response.error || response.detail);
       }
@@ -56,21 +67,82 @@ export function DocumentSelector({ selectedIds, onSelectionChange, onDocumentsCh
     }
   };
 
+  const pollUntilReady = async (docId: string, maxAttempts = 30): Promise<Document | null> => {
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        const res = await api.getDocument(docId);
+        if (res.success && res.data) {
+          if (res.data.status === 'completed') return res.data;
+          if (res.data.status === 'failed') return null;
+        }
+      } catch {
+        // keep polling
+      }
+    }
+    return null;
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+
+    setUploading(true);
+    setUploadStatus('Uploading...');
+    setError(null);
+
+    try {
+      const uploadRes = await api.uploadDocument(file, file.name, undefined, orgId);
+      if (!uploadRes.success || !uploadRes.data) {
+        setError(uploadRes.error || uploadRes.detail || 'Upload failed');
+        setUploading(false);
+        setUploadStatus('');
+        return;
+      }
+
+      const docId = uploadRes.data.id;
+      setUploadStatus('Processing document...');
+
+      const completedDoc = await pollUntilReady(docId);
+      if (completedDoc) {
+        // Add to document list and auto-select
+        setDocuments(prev => [completedDoc, ...prev]);
+        const newIds = [...selectedIds, completedDoc.id];
+        onSelectionChange(newIds);
+        onDocumentsChange?.([...documents.filter(d => selectedIds.includes(d.id)), completedDoc]);
+        setUploadStatus('');
+      } else {
+        setError('Document processing failed. Please try again.');
+        setUploadStatus('');
+      }
+    } catch (err) {
+      setError(err);
+      setUploadStatus('');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const selectedDocs = documents.filter(doc => selectedIds.includes(doc.id));
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Attach Brief (Optional)</label>
-        {selectedIds.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { onSelectionChange([]); onDocumentsChange?.([]); }}
-          >
-            Clear ({selectedIds.length})
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {selectedIds.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { onSelectionChange([]); onDocumentsChange?.([]); }}
+            >
+              Clear ({selectedIds.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       {error !== null && (
@@ -81,11 +153,43 @@ export function DocumentSelector({ selectedIds, onSelectionChange, onDocumentsCh
         />
       )}
 
+      {/* Upload inline */}
+      <div className="flex items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_TYPES}
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {uploadStatus}
+            </>
+          ) : (
+            <>
+              <Upload className="h-3.5 w-3.5" />
+              Upload Brief
+            </>
+          )}
+        </Button>
+        <span className="text-xs text-[var(--muted-foreground)]">PDF, DOCX, TXT, MD</span>
+      </div>
+
       {loading ? (
         <p className="text-sm text-[var(--muted-foreground)]">Loading documents...</p>
       ) : documents.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          No briefs uploaded yet.
+          No briefs uploaded yet. Upload one above.
         </p>
       ) : (
         <div className="space-y-2 max-h-48 overflow-y-auto border border-[var(--border)] rounded-lg p-3">

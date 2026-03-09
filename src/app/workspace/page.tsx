@@ -204,13 +204,25 @@ export default function WorkspacePage() {
                 <p className="text-sm text-[var(--muted-foreground)]">No campaigns yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {campaigns.slice(0, 5).map((c) => (
-                    <CampaignModuleCard
-                      key={c.id}
-                      campaign={c}
-                      onClick={() => navigateToCampaign(c.id)}
-                    />
-                  ))}
+                  {campaigns.slice(0, 10).map((c) => {
+                    const hasDoc = c.program_json?._document_context;
+                    return (
+                      <div key={c.id} className="flex items-center justify-between py-1.5">
+                        <span className="text-sm font-medium truncate pr-4">
+                          {c.brand_name || 'Untitled Campaign'}
+                        </span>
+                        <span
+                          className={`text-xs whitespace-nowrap ${
+                            hasDoc
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-[var(--muted-foreground)]'
+                          }`}
+                        >
+                          Brief: {hasDoc ? 'Applied' : 'Not Applied'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
