@@ -8,7 +8,7 @@ export function Footer() {
   const footerLinks = {
     product: [
       { label: 'Features', href: '/features' },
-      { label: 'Personas', href: '/generator' },
+      { label: 'Personas', href: '/personas' },
       { label: 'Chat with MIRA', href: '/chat' },
     ],
     company: [
