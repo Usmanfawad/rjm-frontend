@@ -7,9 +7,6 @@ import {
   BarChart3,
   ChevronDown,
   ChevronUp,
-  Globe,
-  MapPin,
-  Pencil,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -20,7 +17,7 @@ interface PersonaFrameworkTabProps {
   onSwitchToCustomize?: () => void;
 }
 
-export function PersonaFrameworkTab({ campaign, onSwitchToCustomize }: PersonaFrameworkTabProps) {
+export function PersonaFrameworkTab({ campaign }: PersonaFrameworkTabProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['personas']));
   const pj = campaign.program_json;
 
@@ -39,11 +36,6 @@ export function PersonaFrameworkTab({ campaign, onSwitchToCustomize }: PersonaFr
       return next;
     });
   };
-
-  const hasMulticultural =
-    (pj.multicultural_expressions?.length ?? 0) > 0 ||
-    (pj.multicultural_lineages?.length ?? 0) > 0;
-  const hasLocal = (pj.local_culture_segments?.length ?? 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -91,25 +83,11 @@ export function PersonaFrameworkTab({ campaign, onSwitchToCustomize }: PersonaFr
               <Users className="h-5 w-5 text-[var(--primary)]" />
               Persona Portfolio ({pj.personas?.length ?? 0})
             </span>
-            <span className="flex items-center gap-2">
-              {onSwitchToCustomize && pj.personas?.length > 0 && campaign.lifecycle_state !== 'live' && campaign.lifecycle_state !== 'archived' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSwitchToCustomize();
-                  }}
-                  className="p-1 rounded hover:bg-[var(--border)] transition-colors"
-                  title="Customize personas"
-                >
-                  <Pencil className="h-4 w-4 text-[var(--muted-foreground)]" />
-                </button>
-              )}
-              {expanded.has('personas') ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </span>
+            {expanded.has('personas') ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </CardTitle>
         </CardHeader>
         {expanded.has('personas') && (
@@ -240,61 +218,6 @@ export function PersonaFrameworkTab({ campaign, onSwitchToCustomize }: PersonaFr
               ))}
             </ul>
           </CardContent>
-        </Card>
-      )}
-
-      {/* Cultural Modifiers */}
-      {(hasMulticultural || hasLocal) && (
-        <Card variant="elevated">
-          <CardHeader
-            className="cursor-pointer select-none"
-            onClick={() => toggle('cultural')}
-          >
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-[var(--primary)]" />
-                Cultural Modifiers
-              </span>
-              {expanded.has('cultural') ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </CardTitle>
-          </CardHeader>
-          {expanded.has('cultural') && (
-            <CardContent className="space-y-4">
-              {pj.multicultural_expressions && pj.multicultural_expressions.length > 0 && (
-                <div>
-                  <p className="text-xs text-[var(--muted-foreground)] mb-2">
-                    Multicultural Expressions
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {pj.multicultural_expressions.map((expr) => (
-                      <Badge key={expr} variant="info">
-                        {expr}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {hasLocal && (
-                <div>
-                  <p className="text-xs text-[var(--muted-foreground)] mb-2">
-                    Local Culture
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {pj.local_culture_segments.map((seg) => (
-                      <Badge key={seg} variant="success">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {seg}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          )}
         </Card>
       )}
     </div>

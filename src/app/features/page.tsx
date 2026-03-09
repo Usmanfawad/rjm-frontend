@@ -1,5 +1,4 @@
 import { Navbar, Footer } from '@/components/layout';
-import { Features } from '@/components/marketing';
 import { Card, CardContent } from '@/components/ui';
 import {
   Sparkles,
@@ -10,7 +9,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui';
 
 const detailedFeatures = [
   {
@@ -68,31 +66,17 @@ export default function FeaturesPage() {
         {/* Detailed Features */}
         <section className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="space-y-16">
-              {detailedFeatures.map((feature, index) => (
-                <div
-                  key={feature.title}
-                  className={`flex flex-col ${
-                    index % 2 === 1 ? 'md:flex-row-reverse' : 'md:flex-row'
-                  } gap-12 items-center`}
-                >
-                  <div className="flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-[var(--primary)] flex items-center justify-center mb-6">
-                      <feature.icon className="h-7 w-7 text-white" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {detailedFeatures.map((feature) => (
+                <Card key={feature.title} variant="elevated">
+                  <CardContent className="p-6">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--primary)] flex items-center justify-center mb-4">
+                      <feature.icon className="h-5 w-5 text-white" />
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-                      {feature.title}
-                    </h2>
-                    <p className="text-[var(--muted-foreground)]">{feature.description}</p>
-                  </div>
-                  <div className="flex-1">
-                    <Card variant="elevated" className="aspect-video flex items-center justify-center bg-[var(--accent)]">
-                      <CardContent className="text-center">
-                        <feature.icon className="h-16 w-16 text-[var(--muted-foreground)] mx-auto" />
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-[var(--muted-foreground)]">{feature.description}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
@@ -107,12 +91,15 @@ export default function FeaturesPage() {
             <p className="text-lg text-white/80 mb-8">
               Let&apos;s start the conversation.
             </p>
-            <Link href="/register">
-              <Button size="lg" className="bg-white text-[var(--primary)] hover:opacity-90">
-                Enter Persona Engine
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/chat"
+                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg bg-white text-[var(--primary)] hover:opacity-90 transition-opacity"
+              >
+                Start Conversation
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+              </Link>
+            </div>
           </div>
         </section>
       </main>

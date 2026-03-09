@@ -1,5 +1,5 @@
 import { Navbar, Footer } from '@/components/layout';
-import { Card, CardContent, Button } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -81,20 +81,18 @@ export default function AboutPage() {
               Let&apos;s start the conversation.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/register">
-                <Button size="lg" className="bg-white text-[var(--primary)] hover:opacity-90 min-w-[180px]">
-                  Enter Persona Engine
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg bg-white text-[var(--primary)] hover:opacity-90 transition-opacity min-w-[180px]"
+              >
+                Enter Persona Engine
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-              <Link href="/contact">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white text-white hover:bg-white/10 min-w-[180px]"
-                >
-                  Contact Us
-                </Button>
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg border border-white text-white hover:bg-white/10 transition-colors min-w-[180px]"
+              >
+                Contact Us
               </Link>
             </div>
           </div>

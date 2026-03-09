@@ -13,7 +13,6 @@ import {
   Globe,
   MapPin,
   BarChart3,
-  Settings2,
   Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -25,6 +24,11 @@ interface EditablePersona {
   name: string;
   highlight?: string | null;
   locked: boolean;
+}
+
+interface EditableGenerational {
+  name: string;
+  highlight?: string | null;
 }
 
 interface CustomizeTabProps {
@@ -40,7 +44,6 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     campaign.lifecycle_state === 'live' ||
     campaign.lifecycle_state === 'archived';
 
-  // Scroll to persona editing section when triggered from Framework tab pencil icon
   useEffect(() => {
     if (scrollToEditing && editingSectionRef.current) {
       editingSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -66,13 +69,19 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Generational editing state
+  const [editableGenerationals, setEditableGenerationals] = useState<EditableGenerational[]>(() =>
+    (pj?.generational_segments || []).map((gs) => ({
+      name: gs.name,
+      highlight: gs.highlight,
+    })),
+  );
+  const [addGenInput, setAddGenInput] = useState('');
+
   // Refinement state
   const [personaCount, setPersonaCount] = useState<string>(
     pj?.personas?.length?.toString() || '15',
   );
-  const [replaceFrom, setReplaceFrom] = useState('');
-  const [replaceTo, setReplaceTo] = useState('');
-  const [constraints, setConstraints] = useState('');
 
   // Apply state
   const [applying, setApplying] = useState(false);
@@ -124,6 +133,7 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Persona operations
   const removePersona = (index: number) => {
     setEditablePersonas((prev) => prev.filter((_, i) => i !== index));
   };
@@ -154,7 +164,30 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     setShowSuggestions(false);
   };
 
-  // Apply all persona changes via rebuild endpoint
+  // Generational operations
+  const removeGenerational = (index: number) => {
+    setEditableGenerationals((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveGenerational = (index: number, direction: 'up' | 'down') => {
+    setEditableGenerationals((prev) => {
+      const arr = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= arr.length) return arr;
+      [arr[index], arr[targetIndex]] = [arr[targetIndex], arr[index]];
+      return arr;
+    });
+  };
+
+  const addGenerational = () => {
+    const name = addGenInput.trim();
+    if (!name) return;
+    if (editableGenerationals.some((g) => g.name.toLowerCase() === name.toLowerCase())) return;
+    setEditableGenerationals((prev) => [...prev, { name, highlight: null }]);
+    setAddGenInput('');
+  };
+
+  // Apply all changes via rebuild endpoint
   const applyChanges = async () => {
     setApplyError('');
     const currentNames = editablePersonas.map((p) => p.name);
@@ -163,7 +196,14 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     const removed = originalNames.filter((n) => !currentNames.includes(n));
     const lockedNames = editablePersonas.filter((p) => p.locked).map((p) => p.name);
 
-    // If only reorders (no additions or removals), apply directly via PATCH
+    // Check for generational changes
+    const originalGenNames = pj?.generational_segments?.map((g) => g.name) || [];
+    const currentGenNames = editableGenerationals.map((g) => g.name);
+    const genChanged =
+      originalGenNames.length !== currentGenNames.length ||
+      originalGenNames.some((n, i) => n !== currentGenNames[i]);
+
+    // If only reorders / generational edits (no persona additions or removals), apply directly via PATCH
     if (added.length === 0 && removed.length === 0) {
       setApplying(true);
       try {
@@ -171,7 +211,15 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
           const original = pj?.personas?.find((p) => p.name === ep.name);
           return original || { name: ep.name, highlight: ep.highlight };
         });
-        const updatedJson = { ...pj, personas: updatedPersonas };
+        const updatedGenerationals = editableGenerationals.map((eg) => {
+          const original = pj?.generational_segments?.find((g) => g.name === eg.name);
+          return original || { name: eg.name, highlight: eg.highlight };
+        });
+        const updatedJson = {
+          ...pj,
+          personas: updatedPersonas,
+          generational_segments: updatedGenerationals,
+        };
         const res = await api.updatePersonaGeneration(campaign.id, {
           program_json: updatedJson as import('@/types/api').ProgramJSON,
         });
@@ -220,34 +268,6 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     try {
       const res = await api.rebuildGeneration(campaign.id, {
         persona_count: count,
-      });
-      if (res.success) {
-        window.location.reload();
-      } else {
-        setApplyError('Rebuild failed. Please try again.');
-      }
-    } catch {
-      setApplyError('Rebuild failed. Please try again.');
-    } finally {
-      setApplying(false);
-    }
-  };
-
-  const handleReplacePersona = async () => {
-    if (!replaceFrom.trim()) return;
-    setApplying(true);
-    setApplyError('');
-    try {
-      const currentNames = editablePersonas.map((p) => p.name);
-      const removed = [replaceFrom.trim()];
-      const requested = replaceTo.trim()
-        ? currentNames.filter((n) => n !== replaceFrom.trim()).concat(replaceTo.trim())
-        : currentNames.filter((n) => n !== replaceFrom.trim());
-
-      const res = await api.rebuildGeneration(campaign.id, {
-        requested_personas: requested,
-        removed_personas: removed,
-        persona_count: requested.length,
       });
       if (res.success) {
         window.location.reload();
@@ -318,26 +338,6 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     }
   };
 
-  const handleRebuildWithConstraints = async () => {
-    if (!constraints.trim()) return;
-    setApplying(true);
-    setApplyError('');
-    try {
-      const res = await api.rebuildGeneration(campaign.id, {
-        constraints: constraints.trim(),
-      });
-      if (res.success) {
-        window.location.reload();
-      } else {
-        setApplyError('Rebuild failed. Please try again.');
-      }
-    } catch {
-      setApplyError('Rebuild failed. Please try again.');
-    } finally {
-      setApplying(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {isLocked && (
@@ -356,134 +356,220 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
 
       {/* Persona Editing */}
       <div ref={editingSectionRef} className="transition-all duration-300">
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-[var(--primary)]" />
+              Persona Editing
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {editablePersonas.map((p, index) => (
+                <div
+                  key={`${p.name}-${index}`}
+                  className="flex items-center gap-2 p-3 rounded-lg bg-[var(--accent)]"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      onClick={() => movePersona(index, 'up')}
+                      disabled={index === 0 || isLocked}
+                      className="p-0.5 rounded hover:bg-[var(--border)] disabled:opacity-30 transition-colors"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => movePersona(index, 'down')}
+                      disabled={index === editablePersonas.length - 1 || isLocked}
+                      className="p-0.5 rounded hover:bg-[var(--border)] disabled:opacity-30 transition-colors"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{p.name}</p>
+                    {p.highlight && (
+                      <p className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">
+                        {p.highlight}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => toggleLock(index)}
+                    disabled={isLocked}
+                    className="p-1.5 rounded hover:bg-[var(--border)] transition-colors disabled:opacity-50"
+                    title={p.locked ? 'Unlock persona' : 'Lock persona'}
+                  >
+                    {p.locked ? (
+                      <Lock className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    ) : (
+                      <Unlock className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => removePersona(index)}
+                    disabled={p.locked || isLocked}
+                    className="p-1.5 rounded hover:bg-red-500/10 disabled:opacity-30 transition-colors"
+                    title="Remove persona"
+                  >
+                    <X className="h-3.5 w-3.5 text-red-500" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add persona input */}
+              {!isLocked && (
+                <div className="relative pt-2 border-t border-[var(--border)]">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={addPersonaInput}
+                      onChange={(e) => {
+                        setAddPersonaInput(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                      onKeyDown={(e) => e.key === 'Enter' && addPersona()}
+                      placeholder="Search personas to add..."
+                      className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    />
+                    <button
+                      onClick={() => addPersona()}
+                      disabled={!addPersonaInput.trim()}
+                      className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div
+                      ref={suggestionsRef}
+                      className="absolute left-0 right-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-lg z-10"
+                    >
+                      {suggestions.map((s) => (
+                        <button
+                          key={`${s.name}-${s.category}`}
+                          onClick={() => addPersona(s.name)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--accent)] transition-colors"
+                        >
+                          <span className="font-medium">{s.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Generational Segment Editing */}
       <Card variant="elevated">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-[var(--primary)]" />
-            Persona Editing
+            <BarChart3 className="h-5 w-5 text-[var(--primary)]" />
+            Generational Segments
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {editablePersonas.map((p, index) => (
+            {editableGenerationals.map((g, index) => (
               <div
-                key={`${p.name}-${index}`}
+                key={`${g.name}-${index}`}
                 className="flex items-center gap-2 p-3 rounded-lg bg-[var(--accent)]"
               >
                 <div className="flex flex-col gap-0.5">
                   <button
-                    onClick={() => movePersona(index, 'up')}
+                    onClick={() => moveGenerational(index, 'up')}
                     disabled={index === 0 || isLocked}
                     className="p-0.5 rounded hover:bg-[var(--border)] disabled:opacity-30 transition-colors"
                   >
                     <ArrowUp className="h-3 w-3" />
                   </button>
                   <button
-                    onClick={() => movePersona(index, 'down')}
-                    disabled={index === editablePersonas.length - 1 || isLocked}
+                    onClick={() => moveGenerational(index, 'down')}
+                    disabled={index === editableGenerationals.length - 1 || isLocked}
                     className="p-0.5 rounded hover:bg-[var(--border)] disabled:opacity-30 transition-colors"
                   >
                     <ArrowDown className="h-3 w-3" />
                   </button>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{p.name}</p>
-                  {p.highlight && (
+                  <p className="font-medium text-sm truncate">{g.name}</p>
+                  {g.highlight && (
                     <p className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">
-                      {p.highlight}
+                      {g.highlight}
                     </p>
                   )}
                 </div>
                 <button
-                  onClick={() => toggleLock(index)}
+                  onClick={() => removeGenerational(index)}
                   disabled={isLocked}
-                  className="p-1.5 rounded hover:bg-[var(--border)] transition-colors disabled:opacity-50"
-                  title={p.locked ? 'Unlock persona' : 'Lock persona'}
-                >
-                  {p.locked ? (
-                    <Lock className="h-3.5 w-3.5 text-[var(--primary)]" />
-                  ) : (
-                    <Unlock className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
-                  )}
-                </button>
-                <button
-                  onClick={() => removePersona(index)}
-                  disabled={p.locked || isLocked}
                   className="p-1.5 rounded hover:bg-red-500/10 disabled:opacity-30 transition-colors"
-                  title="Remove persona"
+                  title="Remove segment"
                 >
                   <X className="h-3.5 w-3.5 text-red-500" />
                 </button>
               </div>
             ))}
 
-            {/* Add persona input */}
+            {/* Add generational input */}
             {!isLocked && (
-              <div className="relative pt-2 border-t border-[var(--border)]">
+              <div className="pt-2 border-t border-[var(--border)]">
                 <div className="flex items-center gap-2">
                   <input
-                    ref={inputRef}
                     type="text"
-                    value={addPersonaInput}
-                    onChange={(e) => {
-                      setAddPersonaInput(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    onKeyDown={(e) => e.key === 'Enter' && addPersona()}
-                    placeholder="Search personas to add..."
+                    value={addGenInput}
+                    onChange={(e) => setAddGenInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addGenerational()}
+                    placeholder="Add generational segment..."
                     className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                   />
                   <button
-                    onClick={() => addPersona()}
-                    disabled={!addPersonaInput.trim()}
+                    onClick={addGenerational}
+                    disabled={!addGenInput.trim()}
                     className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                {showSuggestions && suggestions.length > 0 && (
-                  <div
-                    ref={suggestionsRef}
-                    className="absolute left-0 right-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-lg z-10"
-                  >
-                    {suggestions.map((s) => (
-                      <button
-                        key={`${s.name}-${s.category}`}
-                        onClick={() => addPersona(s.name)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--accent)] transition-colors"
-                      >
-                        <span className="font-medium">{s.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Apply Changes */}
-            {!isLocked && (
-              <div className="pt-2">
-                <button
-                  onClick={applyChanges}
-                  disabled={applying}
-                  className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
-                >
-                  {applying ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Applying...
-                    </span>
-                  ) : (
-                    'Apply Changes'
-                  )}
-                </button>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
-      </div>
+
+      {/* Persona Count */}
+      <Card variant="elevated">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Hash className="h-5 w-5 text-[var(--primary)]" />
+            Persona Count
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              min={1}
+              max={20}
+              value={personaCount}
+              onChange={(e) => setPersonaCount(e.target.value)}
+              className="w-24"
+              disabled={isLocked || applying}
+            />
+            <button
+              onClick={handleAdjustCount}
+              disabled={isLocked || applying}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {applying ? 'Rebuilding...' : 'Apply'}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Overlay Controls */}
       <Card variant="elevated">
@@ -492,61 +578,6 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Adjust Persona Count */}
-            <div className="p-4 rounded-lg border border-[var(--border)]">
-              <div className="flex items-center gap-2 mb-3">
-                <Hash className="h-4 w-4 text-[var(--primary)]" />
-                <p className="text-sm font-medium">Adjust Persona Count</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={personaCount}
-                  onChange={(e) => setPersonaCount(e.target.value)}
-                  className="w-24"
-                  disabled={isLocked || applying}
-                />
-                <button
-                  onClick={handleAdjustCount}
-                  disabled={isLocked || applying}
-                  className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {applying ? 'Rebuilding...' : 'Apply'}
-                </button>
-              </div>
-            </div>
-
-            {/* Replace Persona */}
-            <div className="p-4 rounded-lg border border-[var(--border)]">
-              <div className="flex items-center gap-2 mb-3">
-                <Settings2 className="h-4 w-4 text-[var(--primary)]" />
-                <p className="text-sm font-medium">Replace Persona</p>
-              </div>
-              <div className="space-y-2">
-                <Input
-                  placeholder="Persona to remove..."
-                  value={replaceFrom}
-                  onChange={(e) => setReplaceFrom(e.target.value)}
-                  disabled={isLocked || applying}
-                />
-                <Input
-                  placeholder="Replace with (leave blank to just remove)..."
-                  value={replaceTo}
-                  onChange={(e) => setReplaceTo(e.target.value)}
-                  disabled={isLocked || applying}
-                />
-                <button
-                  onClick={handleReplacePersona}
-                  disabled={isLocked || !replaceFrom.trim() || applying}
-                  className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {applying ? 'Rebuilding...' : 'Apply'}
-                </button>
-              </div>
-            </div>
-
             {/* Generational Overlay */}
             <div className="p-4 rounded-lg border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-3">
@@ -600,34 +631,29 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
                 {applying ? 'Applying...' : 'Apply Overlay'}
               </button>
             </div>
-
-            {/* Rebuild With Constraints */}
-            <div className="p-4 rounded-lg border border-[var(--border)]">
-              <div className="flex items-center gap-2 mb-3">
-                <Settings2 className="h-4 w-4 text-[var(--primary)]" />
-                <p className="text-sm font-medium">Rebuild With Constraints</p>
-              </div>
-              <div className="space-y-2">
-                <textarea
-                  placeholder="Describe constraints for rebuilding..."
-                  value={constraints}
-                  onChange={(e) => setConstraints(e.target.value)}
-                  disabled={isLocked || applying}
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50 resize-none"
-                />
-                <button
-                  onClick={handleRebuildWithConstraints}
-                  disabled={isLocked || !constraints.trim() || applying}
-                  className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {applying ? 'Rebuilding...' : 'Rebuild'}
-                </button>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Apply All Changes */}
+      {!isLocked && (
+        <div className="sticky bottom-4">
+          <button
+            onClick={applyChanges}
+            disabled={applying}
+            className="w-full px-6 py-3 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity shadow-lg"
+          >
+            {applying ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Applying Changes...
+              </span>
+            ) : (
+              'Apply Changes'
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
