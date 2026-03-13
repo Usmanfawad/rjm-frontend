@@ -14,6 +14,7 @@ import {
   MapPin,
   BarChart3,
   Loader2,
+  Anchor,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui';
@@ -77,6 +78,16 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     })),
   );
   const [addGenInput, setAddGenInput] = useState('');
+
+  // Category anchors editing state
+  const [editableAnchors, setEditableAnchors] = useState<string[]>(
+    () => pj?.category_anchors || [],
+  );
+  const [addAnchorInput, setAddAnchorInput] = useState('');
+
+  // Current overlay display
+  const currentMulticultural = pj?.multicultural_expressions || [];
+  const currentLocal = pj?.local_culture_segments || [];
 
   // Refinement state
   const [personaCount, setPersonaCount] = useState<string>(
@@ -187,6 +198,18 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     setAddGenInput('');
   };
 
+  // Anchor operations
+  const removeAnchor = (index: number) => {
+    setEditableAnchors((prev) => prev.filter((_, i) => i !== index));
+  };
+  const addAnchor = () => {
+    const name = addAnchorInput.trim();
+    if (!name) return;
+    if (editableAnchors.some((a) => a.toLowerCase() === name.toLowerCase())) return;
+    setEditableAnchors((prev) => [...prev, name]);
+    setAddAnchorInput('');
+  };
+
   // Apply all changes via rebuild endpoint
   const applyChanges = async () => {
     setApplyError('');
@@ -219,6 +242,7 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
           ...pj,
           personas: updatedPersonas,
           generational_segments: updatedGenerationals,
+          category_anchors: editableAnchors,
         };
         const res = await api.updatePersonaGeneration(campaign.id, {
           program_json: updatedJson as import('@/types/api').ProgramJSON,
@@ -239,11 +263,20 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
     // For additions/removals, use the rebuild endpoint
     setApplying(true);
     try {
+      // Include generational segments so they aren't lost during rebuild
+      const genSegments = genChanged
+        ? editableGenerationals.map((eg) => {
+            const original = pj?.generational_segments?.find((g) => g.name === eg.name);
+            return original || { name: eg.name, highlight: eg.highlight };
+          })
+        : undefined;
+
       const res = await api.rebuildGeneration(campaign.id, {
         requested_personas: added.length > 0 ? currentNames : undefined,
         locked_personas: lockedNames.length > 0 ? lockedNames : undefined,
         removed_personas: removed.length > 0 ? removed : undefined,
         persona_count: currentNames.length,
+        generational_segments: genSegments,
       });
       if (res.success) {
         window.location.reload();
@@ -540,6 +573,104 @@ export function CustomizeTab({ campaign, scrollToEditing }: CustomizeTabProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Category Anchors */}
+      <Card variant="elevated">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Anchor className="h-5 w-5 text-[var(--primary)]" />
+            Category Anchors
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-[var(--muted-foreground)] mb-3">
+            Commercial anchor segments placed at the end of the portfolio.
+          </p>
+          <div className="space-y-2">
+            {editableAnchors.map((anchor, index) => (
+              <div
+                key={`anchor-${index}`}
+                className="flex items-center gap-2 p-2 rounded-lg bg-[var(--accent)]"
+              >
+                <span className="flex-1 text-sm font-medium">{anchor}</span>
+                {!isLocked && (
+                  <button
+                    onClick={() => removeAnchor(index)}
+                    className="p-1 rounded hover:bg-red-500/10 transition-colors"
+                    title="Remove anchor"
+                  >
+                    <X className="h-3.5 w-3.5 text-red-500" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {editableAnchors.length === 0 && (
+              <p className="text-xs text-[var(--muted-foreground)] italic">No category anchors.</p>
+            )}
+            {!isLocked && (
+              <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
+                <input
+                  type="text"
+                  value={addAnchorInput}
+                  onChange={(e) => setAddAnchorInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addAnchor()}
+                  placeholder="Add category anchor..."
+                  className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+                <button
+                  onClick={addAnchor}
+                  disabled={!addAnchorInput.trim()}
+                  className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Current Overlays (read-only display) */}
+      {(currentMulticultural.length > 0 || currentLocal.length > 0) && (
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle>Applied Overlays</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {currentMulticultural.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe className="h-4 w-4 text-[var(--primary)]" />
+                    <p className="text-sm font-medium">Multicultural Expressions</p>
+                  </div>
+                  <div className="space-y-1">
+                    {currentMulticultural.map((expr, i) => (
+                      <p key={i} className="text-xs text-[var(--muted-foreground)] pl-6">• {expr}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {currentLocal.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-4 w-4 text-[var(--primary)]" />
+                    <p className="text-sm font-medium">Local Culture Segments</p>
+                  </div>
+                  <div className="space-y-1">
+                    {currentLocal.map((seg, i) => (
+                      <p key={i} className="text-xs text-[var(--muted-foreground)] pl-6">• {seg}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-[var(--muted-foreground)] italic">
+                Use the overlay buttons below to re-detect or update these.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Persona Count */}
       <Card variant="elevated">
