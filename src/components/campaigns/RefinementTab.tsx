@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Hash,
   ArrowLeftRight,
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui';
+import { api } from '@/lib/api';
 import type { CampaignView } from '@/types/api';
 
 interface RefinementTabProps {
@@ -23,77 +23,151 @@ interface RefinementTabProps {
 
 export function RefinementTab({
   campaign,
-  onRegenerate,
 }: RefinementTabProps) {
-  const router = useRouter();
   const [personaCount, setPersonaCount] = useState<string>(
     campaign.program_json?.personas?.length?.toString() || '15',
   );
   const [replaceFrom, setReplaceFrom] = useState('');
   const [replaceTo, setReplaceTo] = useState('');
   const [constraints, setConstraints] = useState('');
-  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [error, setError] = useState('');
 
   const isLocked =
     campaign.lifecycle_state === 'live' ||
     campaign.lifecycle_state === 'archived';
 
-  const handleRefineInChat = (instruction: string) => {
-    const encoded = encodeURIComponent(instruction);
-    router.push(
-      `/chat?campaign_id=${campaign.id}&prefill=${encoded}`,
-    );
-  };
-
-  const handleAdjustCount = () => {
+  const handleAdjustCount = async () => {
     const count = parseInt(personaCount, 10);
-    if (!count || count < 1 || count > 20) return;
-    handleRefineInChat(
-      `Rebuild this campaign with exactly ${count} personas. Recalculate portfolio, insights, activation plan, and cultural overlays.`,
-    );
+    if (!count || count < 1 || count > 20) {
+      setError('Persona count must be between 1 and 20.');
+      return;
+    }
+    setApplying(true);
+    setError('');
+    try {
+      const res = await api.rebuildGeneration(campaign.id, {
+        persona_count: count,
+      });
+      if (res.success) {
+        window.location.reload();
+      } else {
+        setError('Rebuild failed. Please try again.');
+      }
+    } catch {
+      setError('Rebuild failed. Please try again.');
+    } finally {
+      setApplying(false);
+    }
   };
 
-  const handleReplacePersona = () => {
+  const handleReplacePersona = async () => {
     if (!replaceFrom.trim()) return;
-    const instruction = replaceTo.trim()
-      ? `Replace the persona "${replaceFrom.trim()}" with "${replaceTo.trim()}" in this campaign. Recalculate insights and activation plan.`
-      : `Remove the persona "${replaceFrom.trim()}" from this campaign. Recalculate insights and activation plan.`;
-    handleRefineInChat(instruction);
+    setApplying(true);
+    setError('');
+    try {
+      const currentNames = campaign.program_json?.personas?.map((p) => p.name) || [];
+      const removed = [replaceFrom.trim()];
+      const requested = replaceTo.trim()
+        ? currentNames.filter((n) => n !== replaceFrom.trim()).concat(replaceTo.trim())
+        : currentNames.filter((n) => n !== replaceFrom.trim());
+
+      const res = await api.rebuildGeneration(campaign.id, {
+        requested_personas: requested,
+        removed_personas: removed,
+        persona_count: requested.length,
+      });
+      if (res.success) {
+        window.location.reload();
+      } else {
+        setError('Rebuild failed. Please try again.');
+      }
+    } catch {
+      setError('Rebuild failed. Please try again.');
+    } finally {
+      setApplying(false);
+    }
   };
 
-  const handleMulticulturalOverlay = () => {
-    handleRefineInChat(
-      'Apply multicultural overlay to this campaign. Detect cultural lineages from the brief and apply canonical multicultural expressions.',
-    );
+  const handleMulticulturalOverlay = async () => {
+    setApplying(true);
+    setError('');
+    try {
+      const res = await api.rebuildGeneration(campaign.id, {
+        apply_multicultural_overlay: true,
+      });
+      if (res.success) {
+        window.location.reload();
+      } else {
+        setError('Overlay application failed. Please try again.');
+      }
+    } catch {
+      setError('Overlay application failed. Please try again.');
+    } finally {
+      setApplying(false);
+    }
   };
 
-  const handleLocalOverlay = () => {
-    handleRefineInChat(
-      'Apply local culture overlay to this campaign. Detect relevant DMAs from the brief and apply local culture segments.',
-    );
+  const handleLocalOverlay = async () => {
+    setApplying(true);
+    setError('');
+    try {
+      const res = await api.rebuildGeneration(campaign.id, {
+        apply_local_overlay: true,
+      });
+      if (res.success) {
+        window.location.reload();
+      } else {
+        setError('Overlay application failed. Please try again.');
+      }
+    } catch {
+      setError('Overlay application failed. Please try again.');
+    } finally {
+      setApplying(false);
+    }
   };
 
-  const handleRebuildWithConstraints = () => {
+  const handleRebuildWithConstraints = async () => {
     if (!constraints.trim()) return;
-    handleRefineInChat(
-      `Rebuild this campaign with the following constraints: ${constraints.trim()}`,
-    );
+    setApplying(true);
+    setError('');
+    try {
+      const res = await api.rebuildGeneration(campaign.id, {
+        constraints: constraints.trim(),
+      });
+      if (res.success) {
+        window.location.reload();
+      } else {
+        setError('Rebuild failed. Please try again.');
+      }
+    } catch {
+      setError('Rebuild failed. Please try again.');
+    } finally {
+      setApplying(false);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {isLocked && (
+        <div className="p-4 rounded-lg border border-yellow-400/30 bg-yellow-50 dark:bg-yellow-900/10">
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            This campaign is {campaign.lifecycle_state} and cannot be refined.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 rounded-lg border border-red-400/30 bg-red-50 dark:bg-red-900/10">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
       <Card variant="elevated">
         <CardHeader>
           <CardTitle>Refine Campaign</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLocked && (
-            <p className="text-sm text-[var(--muted-foreground)] mb-4">
-              This campaign is {campaign.lifecycle_state} and cannot be refined.
-              Duplicate it to make changes.
-            </p>
-          )}
-
           <div className="space-y-6">
             {/* Adjust Persona Count */}
             <div className="p-4 rounded-lg border border-[var(--border)]">
@@ -109,14 +183,14 @@ export function RefinementTab({
                   value={personaCount}
                   onChange={(e) => setPersonaCount(e.target.value)}
                   className="w-24"
-                  disabled={isLocked}
+                  disabled={isLocked || applying}
                 />
                 <button
                   onClick={handleAdjustCount}
-                  disabled={isLocked}
+                  disabled={isLocked || applying}
                   className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Apply
+                  {applying ? 'Rebuilding...' : 'Apply'}
                 </button>
               </div>
             </div>
@@ -132,20 +206,20 @@ export function RefinementTab({
                   placeholder="Persona to remove..."
                   value={replaceFrom}
                   onChange={(e) => setReplaceFrom(e.target.value)}
-                  disabled={isLocked}
+                  disabled={isLocked || applying}
                 />
                 <Input
                   placeholder="Replace with (leave blank to just remove)..."
                   value={replaceTo}
                   onChange={(e) => setReplaceTo(e.target.value)}
-                  disabled={isLocked}
+                  disabled={isLocked || applying}
                 />
                 <button
                   onClick={handleReplacePersona}
-                  disabled={isLocked || !replaceFrom.trim()}
+                  disabled={isLocked || !replaceFrom.trim() || applying}
                   className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Apply
+                  {applying ? 'Rebuilding...' : 'Apply'}
                 </button>
               </div>
             </div>
@@ -161,10 +235,10 @@ export function RefinementTab({
               </p>
               <button
                 onClick={handleMulticulturalOverlay}
-                disabled={isLocked}
+                disabled={isLocked || applying}
                 className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Apply Overlay
+                {applying ? 'Applying...' : 'Apply Overlay'}
               </button>
             </div>
 
@@ -179,10 +253,10 @@ export function RefinementTab({
               </p>
               <button
                 onClick={handleLocalOverlay}
-                disabled={isLocked}
+                disabled={isLocked || applying}
                 className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Apply Overlay
+                {applying ? 'Applying...' : 'Apply Overlay'}
               </button>
             </div>
 
@@ -197,16 +271,16 @@ export function RefinementTab({
                   placeholder="Describe constraints for rebuilding (e.g., 'Only outdoor and adventure personas, no generic cross-category personas')..."
                   value={constraints}
                   onChange={(e) => setConstraints(e.target.value)}
-                  disabled={isLocked}
+                  disabled={isLocked || applying}
                   rows={3}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50 resize-none"
                 />
                 <button
                   onClick={handleRebuildWithConstraints}
-                  disabled={isLocked || !constraints.trim()}
+                  disabled={isLocked || !constraints.trim() || applying}
                   className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Rebuild
+                  {applying ? 'Rebuilding...' : 'Rebuild'}
                 </button>
               </div>
             </div>

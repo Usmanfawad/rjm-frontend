@@ -788,6 +788,7 @@ class ApiClient {
       apply_local_overlay?: boolean;
       local_dmas?: string[];
       apply_generational_overlay?: boolean;
+      generational_segments?: Array<{ name: string; highlight?: string | null }>;
     }
   ): Promise<ApiResponse<PersonaGeneration>> {
     return this.request<PersonaGeneration>(`/v1/rjm/generations/${generationId}/rebuild`, {
